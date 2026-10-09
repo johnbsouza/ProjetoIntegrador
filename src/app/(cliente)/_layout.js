@@ -7,51 +7,53 @@ export default function ClienteLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#1E2C1B',
-          borderTopColor: '#3A4E36',
+          backgroundColor: '#595959',
+          borderTopColor: '#6B6E6B',
           height: 60,
-          paddingBottom: 8,
-          paddingTop: 8,
+          paddingBottom: 10,
         },
-        tabBarActiveTintColor: '#E4A0B7',
-        tabBarInactiveTintColor: '#A3B19B',
+        tabBarActiveTintColor: '#FF98B9',
+        tabBarInactiveTintColor: '#D1D1D1',
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Início',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home-outline" size={size} color={color} />
-          ),
-        }}
+      <Tabs.Screen 
+        name="index" 
+        options={{ 
+          title: 'Início', 
+          tabBarIcon: ({ color, size }) => (<Ionicons name="home-outline" size={size} color={color} />) 
+        }} 
       />
-      <Tabs.Screen
-        name="explorar"
-        options={{
-          title: 'Explorar',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="search-outline" size={size} color={color} />
-          ),
-        }}
+      <Tabs.Screen 
+        name="explorar" 
+        options={{ 
+          title: 'Explorar', 
+          tabBarIcon: ({ color, size }) => (<Ionicons name="search-outline" size={size} color={color} />) 
+        }} 
       />
-      <Tabs.Screen
-        name="agenda"
-        options={{
-          title: 'Agenda',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="calendar-outline" size={size} color={color} />
-          ),
-        }}
+      <Tabs.Screen 
+        name="agenda" 
+        options={{ 
+          title: 'Agenda', 
+          tabBarIcon: ({ color, size }) => (<Ionicons name="calendar-outline" size={size} color={color} />) 
+        }} 
       />
-      <Tabs.Screen
-        name="perfil"
-        options={{
-          title: 'Perfil',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
-          ),
-        }}
+      <Tabs.Screen 
+        name="notificacoes" 
+        options={{ 
+          title: 'Notificações', 
+          tabBarIcon: ({ color, size }) => (<Ionicons name="notifications-outline" size={size} color={color} />) 
+        }} 
+      />
+      <Tabs.Screen 
+        name="perfil" 
+        options={{ 
+          title: 'Perfil', 
+          tabBarIcon: ({ color, size }) => (<Ionicons name="person-outline" size={size} color={color} />) 
+        }} 
+      />
+      <Tabs.Screen 
+        name="editar-perfil" 
+        options={{ href: null }} 
       />
     </Tabs>
   );

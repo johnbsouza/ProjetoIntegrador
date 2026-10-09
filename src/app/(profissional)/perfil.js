@@ -1,80 +1,64 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-export default function TelaPerfil() {
-  const router = useRouter(); // <-- Roteador adicionado
-  const [disponivel, setDisponivel] = useState(true);
+export default function PerfilProfissionalScreen() {
+  const router = useRouter();
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.avatarContainer}>
-          <Text style={styles.avatarText}>M</Text>
+          <Text style={styles.avatarText}>A</Text>
         </View>
-        <Text style={styles.name}>Mariana Silva</Text>
-        <Text style={styles.role}>Especialista em Gel</Text>
-        
-        <View style={styles.ratingBadge}>
-          <Ionicons name="star" size={16} color="#1A2418" />
-          <Text style={styles.ratingText}>4.9 (120 avaliações)</Text>
-        </View>
+        <Text style={styles.userName}>Ana Silva</Text>
+        <Text style={styles.userEmail}>ana.profissional@lirium.com</Text>
       </View>
 
-      <View style={styles.menuContainer}>
-        <View style={styles.menuItem}>
-          <View style={styles.menuLeft}>
-            <Ionicons name="notifications-outline" size={24} color="#E4A0B7" />
-            <Text style={styles.menuText}>Receber novos agendamentos</Text>
+      <ScrollView contentContainerStyle={styles.menuContainer}>
+        <TouchableOpacity 
+          style={styles.menuItem}
+          onPress={() => router.push('/(profissional)/editar-perfil')}
+        >
+          <View style={styles.menuIconInfo}>
+            <Ionicons name="create-outline" size={24} color="#D1D1D1" />
+            <Text style={styles.menuText}>Editar Perfil</Text>
           </View>
-          <Switch 
-            value={disponivel} 
-            onValueChange={setDisponivel}
-            trackColor={{ false: '#3A4E36', true: '#E4A0B7' }}
-            thumbColor={'#FFF'}
-          />
-        </View>
-
-        <TouchableOpacity style={styles.menuItem}>
-          <View style={styles.menuLeft}>
-            <Ionicons name="time-outline" size={24} color="#E4A0B7" />
-            <Text style={styles.menuText}>Meus Horários de Pausa</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="#8C9C88" />
+          <Ionicons name="chevron-forward" size={20} color="#D1D1D1" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
-          <View style={styles.menuLeft}>
-            <Ionicons name="help-buoy-outline" size={24} color="#E4A0B7" />
-            <Text style={styles.menuText}>Suporte e Ajuda</Text>
+        <TouchableOpacity 
+          style={styles.menuItem}
+          onPress={() => router.push('/(profissional)/ganhos')}
+        >
+          <View style={styles.menuIconInfo}>
+            <Ionicons name="wallet-outline" size={24} color="#D1D1D1" />
+            <Text style={styles.menuText}>Meus Ganhos & Comissões</Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color="#8C9C88" />
+          <Ionicons name="chevron-forward" size={20} color="#D1D1D1" />
         </TouchableOpacity>
 
-               <TouchableOpacity style={styles.logoutBtn} onPress={() => router.replace('/')}>
+        <TouchableOpacity style={styles.logoutButton} onPress={() => router.replace('/')}>
           <Ionicons name="log-out-outline" size={24} color="#FF4C4C" />
-          <Text style={styles.logoutBtnText}>Sair da Conta</Text>
+          <Text style={styles.logoutText}>Sair da Conta</Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#2C3D29' },
-  header: { alignItems: 'center', paddingTop: 40, paddingBottom: 30, borderBottomWidth: 1, borderBottomColor: '#1E2C1B' },
-  avatarContainer: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#E4A0B7', justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
-  avatarText: { fontSize: 36, fontWeight: 'bold', color: '#1A2418' },
-  name: { fontSize: 22, fontWeight: 'bold', color: '#FFF' },
-  role: { fontSize: 14, color: '#A3B19B', marginTop: 4 },
-  ratingBadge: { flexDirection: 'row', backgroundColor: '#E4A0B7', paddingHorizontal: 15, paddingVertical: 6, borderRadius: 20, marginTop: 15, alignItems: 'center', gap: 5 },
-  ratingText: { color: '#1A2418', fontWeight: 'bold', fontSize: 13 },
+  container: { flex: 1, backgroundColor: '#434643' },
+  header: { alignItems: 'center', paddingTop: 50, paddingBottom: 30, backgroundColor: '#595959', borderBottomWidth: 1, borderBottomColor: '#6B6E6B' },
+  avatarContainer: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#FF98B9', justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
+  avatarText: { fontSize: 32, fontWeight: 'bold', color: '#434643' },
+  userName: { fontSize: 22, fontWeight: 'bold', color: '#FFFFFF', marginBottom: 5 },
+  userEmail: { fontSize: 14, color: '#D1D1D1' },
   menuContainer: { padding: 20 },
-  menuItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#1E2C1B', padding: 20, borderRadius: 12, marginBottom: 12, borderWidth: 1, borderColor: '#3A4E36' },
-  menuLeft: { flexDirection: 'row', alignItems: 'center', gap: 15 },
-  menuText: { fontSize: 15, color: '#FFF', fontWeight: '500' },
-  logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: 'rgba(255, 76, 76, 0.1)', padding: 18, borderRadius: 12, marginTop: 20, borderWidth: 1, borderColor: '#FF4C4C' },
-  logoutBtnText: { color: '#FF4C4C', fontSize: 16, fontWeight: 'bold' }
+  menuItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: '#6B6E6B' },
+  menuIconInfo: { flexDirection: 'row', alignItems: 'center' },
+  menuText: { fontSize: 16, color: '#FFFFFF', marginLeft: 15 },
+  logoutButton: { flexDirection: 'row', alignItems: 'center', marginTop: 40, paddingVertical: 15, paddingHorizontal: 20, backgroundColor: 'rgba(255, 76, 76, 0.1)', borderRadius: 10, borderWidth: 1, borderColor: '#FF4C4C' },
+  logoutText: { fontSize: 16, fontWeight: 'bold', color: '#FF4C4C', marginLeft: 10 },
 });

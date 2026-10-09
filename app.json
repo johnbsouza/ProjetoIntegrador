@@ -1,14 +1,18 @@
 {
   "expo": {
     "name": "ProjetoIntegrador",
-    "slug": "ProjetoIntegrador",
+    "slug": "projetointegrador",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "projetointegrador",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "com.johnbsouzasteam.projetointegrador",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -17,7 +21,8 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.johnbsouzasteam.projetointegrador"
     },
     "web": {
       "output": "static",
@@ -37,6 +42,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b0eb8279-6a5d-40c3-a77e-39bb977b9563"
+      }
+    },
+    "owner": "johnbsouzas-team"
   }
 }

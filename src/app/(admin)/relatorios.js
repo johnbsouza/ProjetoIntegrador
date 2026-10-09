@@ -1,78 +1,51 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-export default function AdminRelatoriosScreen() {
-  const fecharCaixa = () => {
-    Alert.alert(
-      'Fecho de Caixa',
-      'Deseja realmente encerrar o caixa do dia e consolidar o faturamento de R$ 1.240,00?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Sim, Fechar Caixa', onPress: () => Alert.alert('Sucesso', 'Caixa fechado com sucesso!') }
-      ]
-    );
-  };
-
+export default function RelatoriosScreen() {
   return (
-    <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
-        {/* Card Faturamento Geral */}
-        <View style={styles.mainCard}>
-          <Text style={styles.mainCardLabel}>Faturamento Total (Mês)</Text>
-          <Text style={styles.mainCardValue}>R$ 18.450,00</Text>
-          <View style={styles.divider} />
-          <View style={styles.rowBetween}>
-            <Text style={styles.subText}>Comissões pagas: R$ 5.535,00</Text>
-            <Text style={styles.subTextGreen}>Lucro Líquido: R$ 12.915,00</Text>
-          </View>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryTitle}>Faturamento do Mês</Text>
+          <Text style={styles.summaryValue}>R$ 28.450,00</Text>
+          <Text style={styles.summarySub}>+12% comparado ao mês anterior</Text>
         </View>
 
-        {/* Resumo do Dia */}
-        <Text style={styles.sectionTitle}>Resumo Financeiro de Hoje</Text>
-        <View style={styles.boxInfo}>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Dinheiro / Pix</Text>
-            <Text style={styles.infoVal}>R$ 820,00</Text>
+        <Text style={styles.sectionTitle}>Desempenho por Categoria</Text>
+
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="sparkles-outline" size={20} color="#FF98B9" />
+            <Text style={styles.cardTitle}>Manicure & Unhas</Text>
           </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Cartão de Crédito</Text>
-            <Text style={styles.infoVal}>R$ 420,00</Text>
-          </View>
-          <View style={[styles.infoRow, { borderBottomWidth: 0, paddingBottom: 0 }]}>
-            <Text style={styles.infoLabelBold}>Total Arrecadado Hoje</Text>
-            <Text style={styles.infoValTotal}>R$ 1.240,00</Text>
-          </View>
+          <Text style={styles.cardValue}>R$ 16.200,00</Text>
         </View>
 
-        {/* Botão de Fecho de Caixa */}
-        <TouchableOpacity style={styles.closeBoxButton} onPress={fecharCaixa}>
-          <Ionicons name="shield-checkmark-outline" size={22} color="#1A2418" />
-          <Text style={styles.closeBoxButtonText}>Realizar Fecho de Caixa</Text>
-        </TouchableOpacity>
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="flower-outline" size={20} color="#FF98B9" />
+            <Text style={styles.cardTitle}>Spa & Tratamentos</Text>
+          </View>
+          <Text style={styles.cardValue}>R$ 12.250,00</Text>
+        </View>
 
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#2C3D29' },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40 },
-  mainCard: { backgroundColor: '#E4A0B7', borderRadius: 16, padding: 22, marginBottom: 25 },
-  mainCardLabel: { fontSize: 13, color: '#1A2418', opacity: 0.8, fontWeight: '600' },
-  mainCardValue: { fontSize: 34, fontWeight: 'bold', color: '#1A2418', marginVertical: 8 },
-  divider: { height: 1, backgroundColor: 'rgba(26, 36, 24, 0.15)', marginVertical: 12 },
-  rowBetween: { flexDirection: 'row', justifyContent: 'space-between' },
-  subText: { fontSize: 11, color: '#1A2418', fontWeight: '500' },
-  subTextGreen: { fontSize: 11, color: '#1A2418', fontWeight: 'bold' },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#FFF', marginBottom: 12 },
-  boxInfo: { backgroundColor: '#1E2C1B', padding: 20, borderRadius: 15, borderWidth: 1, borderColor: '#3A4E36', marginBottom: 25 },
-  infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 12, marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#2C3D29' },
-  infoLabel: { color: '#A3B19B', fontSize: 14 },
-  infoVal: { color: '#FFF', fontSize: 14, fontWeight: 'bold' },
-  infoLabelBold: { color: '#FFF', fontSize: 15, fontWeight: 'bold' },
-  infoValTotal: { color: '#E4A0B7', fontSize: 18, fontWeight: 'bold' },
-  closeBoxButton: { flexDirection: 'row', backgroundColor: '#E4A0B7', padding: 18, borderRadius: 14, justifyContent: 'center', alignItems: 'center', gap: 10 },
-  closeBoxButtonText: { color: '#1A2418', fontSize: 16, fontWeight: 'bold' }
+  container: { flex: 1, backgroundColor: '#434643' },
+  scrollContent: { padding: 20 },
+  summaryCard: { backgroundColor: '#595959', borderRadius: 15, padding: 25, borderWidth: 1, borderColor: '#6B6E6B', marginBottom: 25, alignItems: 'center' },
+  summaryTitle: { fontSize: 14, color: '#D1D1D1', marginBottom: 8, fontWeight: 'bold' },
+  summaryValue: { fontSize: 36, fontWeight: 'bold', color: '#FFFFFF', marginBottom: 5 },
+  summarySub: { fontSize: 12, color: '#FF98B9', fontWeight: 'bold' },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#FFFFFF', marginBottom: 15 },
+  card: { backgroundColor: '#595959', borderRadius: 12, padding: 18, marginBottom: 15, borderWidth: 1, borderColor: '#6B6E6B' },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
+  cardTitle: { fontSize: 16, fontWeight: 'bold', color: '#FFFFFF' },
+  cardValue: { fontSize: 20, fontWeight: 'bold', color: '#FF98B9' },
 });

@@ -1,87 +1,186 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-export default function ClienteHomeScreen() {
-  const router = useRouter(); // <-- Roteador adicionado
-
-  const categorias = [
-    { id: 1, nome: 'Unhas', icon: 'color-palette-outline' },
-    { id: 2, nome: 'Spa', icon: 'leaf-outline' },
-    { id: 3, nome: 'Massagem', icon: 'body-outline' },
-    { id: 4, nome: 'Cílios', icon: 'eye-outline' },
-  ];
-
-  const servicosDestaque = [
-    { id: 1, nome: 'Spa dos Pés Completo', preco: 'R$ 85,00', duracao: '60 min' },
-    { id: 2, nome: 'Alongamento em Gel', preco: 'R$ 150,00', duracao: '120 min' },
-    { id: 3, nome: 'Manicure Clássica', preco: 'R$ 45,00', duracao: '45 min' },
-  ];
+export default function ClienteIndexScreen() {
+  const router = useRouter();
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>Olá, Joana ✨</Text>
-          <Text style={styles.subtitle}>O que vamos fazer hoje?</Text>
+      <StatusBar barStyle="light-content" backgroundColor="#434643" />
+      
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        
+        {/* CABEÇALHO */}
+        <View style={styles.headerRow}>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.greeting}>Olá, Cliente</Text>
+            <Text style={styles.subtitle}>Bem-vinda à Lirium Esmalteria & Spa</Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.logoutButton} 
+            onPress={() => router.replace('/')}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="log-out-outline" size={22} color="#FF4C4C" />
+          </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={() => router.replace('/')}>
-          <Ionicons name="log-out-outline" size={24} color="#FF4C4C" />
-        </TouchableOpacity>
-      </View>
+        {/* CARTÃO DE PRÓXIMO AGENDAMENTO */}
+        <View style={styles.bannerCard}>
+          <Text style={styles.bannerTitle}>Próximo Agendamento</Text>
+          <Text style={styles.bannerService}>Spa dos Pés</Text>
+          <Text style={styles.bannerInfo}>
+            <Ionicons name="calendar-outline" size={14} /> Quinta-feira, 08/10 às 14:30
+          </Text>
+        </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.sectionTitle}>Categorias</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesRow}>
-          {categorias.map(cat => (
-            <TouchableOpacity key={cat.id} style={styles.categoryCard}>
-              <Ionicons name={cat.icon} size={28} color="#E4A0B7" />
-              <Text style={styles.categoryText}>{cat.nome}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        <Text style={styles.sectionTitle}>Mais Pedidos</Text>
-        {servicosDestaque.map(servico => (
-          <View key={servico.id} style={styles.serviceCard}>
-            <View style={styles.serviceInfo}>
-              <Text style={styles.serviceName}>{servico.nome}</Text>
-              <Text style={styles.serviceDetails}>
-                <Ionicons name="time-outline" size={14} color="#A3B19B" /> {servico.duracao}
-              </Text>
-            </View>
-            <View style={styles.serviceAction}>
-              <Text style={styles.servicePrice}>{servico.preco}</Text>
-              <TouchableOpacity style={styles.bookButton}>
-                <Text style={styles.bookButtonText}>Agendar</Text>
-              </TouchableOpacity>
-            </View>
+        <Text style={styles.sectionTitle}>Acesso Rápido</Text>
+        
+        {/* BOTÃO DE AÇÃO RÁPIDA */}
+        <TouchableOpacity 
+          style={styles.actionCard}
+          onPress={() => router.push('/(cliente)/explorar')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.actionIconBox}>
+            <Ionicons name="sparkles" size={22} color="#FF98B9" />
           </View>
-        ))}
+          <View style={styles.actionInfo}>
+            <Text style={styles.actionTitle}>Agendar Novo Serviço</Text>
+            <Text style={styles.actionSub}>Escolha entre manicures, spa e alongamentos</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="rgba(209, 209, 209, 0.6)" />
+        </TouchableOpacity>
+
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#2C3D29' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 30, paddingBottom: 20 },
-  greeting: { fontSize: 24, fontWeight: 'bold', color: '#E4A0B7' },
-  subtitle: { fontSize: 14, color: '#A3B19B', marginTop: 4 },
-  logoutButton: { padding: 10, backgroundColor: 'rgba(255, 76, 76, 0.1)', borderRadius: 10, borderWidth: 1, borderColor: '#FF4C4C' },
-  scrollContent: { paddingBottom: 40 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#FFF', paddingHorizontal: 20, marginBottom: 15, marginTop: 10 },
-  categoriesRow: { paddingHorizontal: 20, marginBottom: 25 },
-  categoryCard: { backgroundColor: '#1E2C1B', padding: 15, borderRadius: 15, alignItems: 'center', marginRight: 15, width: 85, borderWidth: 1, borderColor: '#3A4E36' },
-  categoryText: { color: '#FFF', fontSize: 13, marginTop: 8, fontWeight: '500' },
-  serviceCard: { backgroundColor: '#1E2C1B', flexDirection: 'row', justifyContent: 'space-between', padding: 18, marginHorizontal: 20, borderRadius: 15, marginBottom: 15, borderWidth: 1, borderColor: '#3A4E36' },
-  serviceInfo: { flex: 1, justifyContent: 'center' },
-  serviceName: { fontSize: 16, fontWeight: 'bold', color: '#FFF', marginBottom: 6 },
-  serviceDetails: { fontSize: 13, color: '#A3B19B' },
-  serviceAction: { alignItems: 'flex-end', justifyContent: 'space-between' },
-  servicePrice: { fontSize: 16, fontWeight: 'bold', color: '#E4A0B7', marginBottom: 10 },
-  bookButton: { backgroundColor: '#E4A0B7', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 8 },
-  bookButtonText: { color: '#1A2418', fontWeight: 'bold', fontSize: 13 },
+  container: { 
+    flex: 1, 
+    backgroundColor: '#434643' 
+  },
+  scrollContent: { 
+    paddingHorizontal: 24, 
+    paddingTop: 15,
+    paddingBottom: 30,
+  },
+  headerRow: { 
+    flexDirection: 'row', 
+    justifyContent: 'center', // Centraliza o bloco de texto
+    alignItems: 'center', 
+    marginBottom: 30,
+    position: 'relative', // Permite o posicionamento absoluto do botão
+    minHeight: 50, // Garante altura suficiente para o botão
+  },
+  headerTextContainer: {
+    alignItems: 'center', // Centraliza o texto dentro do seu próprio bloco
+  },
+  greeting: { 
+    fontSize: 26, 
+    fontWeight: 'bold', 
+    color: '#FF98B9', 
+    letterSpacing: 0.5,
+    textAlign: 'center',
+  },
+  subtitle: { 
+    fontSize: 13, 
+    color: 'rgba(209, 209, 209, 0.8)', 
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  logoutButton: { 
+    position: 'absolute', // Fixa o botão à direita sem afetar o centro
+    right: 0,
+    width: 44, 
+    height: 44, 
+    borderRadius: 15, 
+    backgroundColor: 'rgba(255, 76, 76, 0.15)', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    borderWidth: 1, 
+    borderColor: 'rgba(255, 76, 76, 0.3)' 
+  },
+  bannerCard: { 
+    backgroundColor: '#434643', 
+    borderRadius: 24, 
+    padding: 24, 
+    borderWidth: 1, 
+    borderColor: '#595959', 
+    marginBottom: 35,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  bannerTitle: { 
+    fontSize: 12, 
+    color: 'rgba(209, 209, 209, 0.8)', 
+    marginBottom: 8, 
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 1
+  },
+  bannerService: { 
+    fontSize: 24, 
+    fontWeight: 'bold', 
+    color: '#FFFFFF', 
+    marginBottom: 8 
+  },
+  bannerInfo: { 
+    fontSize: 14, 
+    color: '#FF98B9',
+    fontWeight: '500'
+  },
+  sectionTitle: { 
+    fontSize: 18, 
+    fontWeight: 'bold', 
+    color: '#FFFFFF', 
+    marginBottom: 16,
+    letterSpacing: 0.5
+  },
+  actionCard: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    backgroundColor: '#434643', 
+    padding: 18, 
+    borderRadius: 20, 
+    borderWidth: 1, 
+    borderColor: '#595959',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  actionIconBox: { 
+    width: 48, 
+    height: 48, 
+    borderRadius: 24, 
+    backgroundColor: 'rgba(67, 70, 67, 0.8)', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    marginRight: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(107, 110, 107, 0.5)',
+  },
+  actionInfo: { 
+    flex: 1 
+  },
+  actionTitle: { 
+    fontSize: 16, 
+    fontWeight: 'bold', 
+    color: '#FFFFFF', 
+    marginBottom: 4 
+  },
+  actionSub: { 
+    fontSize: 13, 
+    color: 'rgba(209, 209, 209, 0.7)',
+    lineHeight: 18
+  },
 });
