@@ -62,6 +62,21 @@ export default function AdminLayout() {
         />
 
         <Drawer.Screen 
+          name="clientes" 
+          options={{ 
+            drawerLabel: 'Contatos de Clientes', 
+            headerTitle: () => (
+              <View style={{ alignItems: 'flex-start' }}>
+                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FF98B9' }}>Contatos de Clientes</Text>
+              </View>
+            ),
+            drawerIcon: ({ color, size }) => (
+              <Ionicons name="people-outline" size={size} color={color} />
+            ),
+          }} 
+        />
+
+        <Drawer.Screen 
           name="lista-profissionais" 
           options={{ 
             drawerLabel: 'Equipe e Profissionais', 
@@ -71,7 +86,7 @@ export default function AdminLayout() {
               </View>
             ),
             drawerIcon: ({ color, size }) => (
-              <Ionicons name="people-outline" size={size} color={color} />
+              <Ionicons name="ribbon-outline" size={size} color={color} />
             ),
           }} 
         />
@@ -92,6 +107,21 @@ export default function AdminLayout() {
         />
 
         <Drawer.Screen 
+          name="pacotes" 
+          options={{ 
+            drawerLabel: 'Pacotes de Serviços', 
+            headerTitle: () => (
+              <View style={{ alignItems: 'flex-start' }}>
+                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FF98B9' }}>Pacotes de Serviços</Text>
+              </View>
+            ),
+            drawerIcon: ({ color, size }) => (
+              <Ionicons name="gift-outline" size={size} color={color} />
+            ),
+          }} 
+        />
+
+        <Drawer.Screen 
           name="caixa" 
           options={{ 
             drawerLabel: 'Caixa e Estoque', 
@@ -106,15 +136,39 @@ export default function AdminLayout() {
           }} 
         />
 
+        <Drawer.Screen 
+          name="ajuda" 
+          options={{ 
+            drawerLabel: 'Ajuda & Suporte', 
+            headerTitle: () => (
+              <View style={{ alignItems: 'flex-start' }}>
+                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FF98B9' }}>Ajuda & Suporte</Text>
+              </View>
+            ),
+            drawerIcon: ({ color, size }) => (
+              <Ionicons name="help-circle-outline" size={size} color={color} />
+            ),
+          }} 
+        />
 
         <Drawer.Screen name="novo-profissional" options={{ 
           drawerItemStyle: { display: 'none' },
           headerTitle: () => (
             <View>
-              <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FF98B9' }}>Novo Profisional</Text>
+              <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FF98B9' }}>Novo Profissional</Text>
             </View>
           ) 
           }} />
+
+        <Drawer.Screen name="editar-profissional" options={{ 
+          drawerItemStyle: { display: 'none' },
+          headerTitle: () => (
+            <View>
+              <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FF98B9' }}>Editar Profissional</Text>
+            </View>
+          ) 
+          }} />
+
         <Drawer.Screen name="novo-servico" options={{
            drawerItemStyle: { display: 'none' }, 
            headerTitle: () => (
@@ -123,6 +177,7 @@ export default function AdminLayout() {
             </View>
           )
            }} />
+
         <Drawer.Screen name="relatorios" options={{ 
           drawerItemStyle: { display: 'none' }, 
           headerTitle: () => (

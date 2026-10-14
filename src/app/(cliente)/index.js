@@ -1,186 +1,183 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { signOut } from 'firebase/auth';
+import { addDoc, collection, getDocs, query, serverTimestamp, where } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
+import { Alert, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { auth, db } from '../../config/firebase';
 
-export default function ClienteIndexScreen() {
+export default function PainelCliente() {
   const router = useRouter();
+  const [servicos, setServicos] = useState([]);
+  const [pacotes, setPacotes] = useState([]);
+  const [meusAgendamentos, setMeusAgendamentos] = useState([]);
+  const [servicoSelecionado, setServicoSelecionado] = useState(null);
+
+  const usuarioAtual = auth.currentUser;
+
+  useEffect(() => {
+    async function carregarDadosCliente() {
+      try {
+        const servicosSnap = await getDocs(collection(db, 'servicos'));
+        const listaServicos = [];
+        servicosSnap.forEach((doc) => {
+          listaServicos.push({ id: doc.id, ...doc.data() });
+        });
+        setServicos(listaServicos);
+
+        const pacotesSnap = await getDocs(collection(db, 'pacotes'));
+        const listaPacotes = [];
+        pacotesSnap.forEach((doc) => {
+          listaPacotes.push({ id: doc.id, ...doc.data() });
+        });
+        setPacotes(listaPacotes);
+
+        if (usuarioAtual) {
+          const q = query(collection(db, 'agendamentos'), where('clienteId', '==', usuarioAtual.uid));
+          const agendamentosSnap = await getDocs(q);
+          const listaAgendamentos = [];
+          agendamentosSnap.forEach((doc) => {
+            listaAgendamentos.push({ id: doc.id, ...doc.data() });
+          });
+          setMeusAgendamentos(listaAgendamentos);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar dados do cliente:", error);
+      }
+    }
+
+    carregarDadosCliente();
+  }, []);
+
+  async function agendarServico(servico) {
+    if (!usuarioAtual) {
+      Alert.alert('Erro', 'Utilizador não autenticado.');
+      return;
+    }
+
+    try {
+      await addDoc(collection(db, 'agendamentos'), {
+        clienteId: usuarioAtual.uid,
+        clienteEmail: usuarioAtual.email,
+        servicoNome: servico.nome,
+        preco: servico.preco,
+        status: 'Confirmado',
+        dataCriacao: serverTimestamp(),
+      });
+
+      Alert.alert('Sucesso', 'Serviço agendado com sucesso!');
+      
+      const q = query(collection(db, 'agendamentos'), where('clienteId', '==', usuarioAtual.uid));
+      const agendamentosSnap = await getDocs(q);
+      const listaAgendamentos = [];
+      agendamentosSnap.forEach((doc) => {
+        listaAgendamentos.push({ id: doc.id, ...doc.data() });
+      });
+      setMeusAgendamentos(listaAgendamentos);
+
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível concluir o agendamento.');
+    }
+  }
+
+  async function sair() {
+    try {
+      await signOut(auth);
+      router.replace('/');
+    } catch (error) {
+      console.error("Erro ao sair:", error);
+    }
+  }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#434643" />
-      
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+    <LinearGradient colors={['#1E201E', '#434643', '#1A1C1A']} style={{ flex: 1 }}>
+      <SafeAreaView style={styles.tela}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
         
-        {/* CABEÇALHO */}
-        <View style={styles.headerRow}>
-          <View style={styles.headerTextContainer}>
-            <Text style={styles.greeting}>Olá, Cliente</Text>
-            <Text style={styles.subtitle}>Bem-vinda à Lirium Esmalteria & Spa</Text>
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.saudacao}>Olá, Bem-vinda!</Text>
+            <Text style={styles.subtitulo}>Lirium Esmalteria & Spa</Text>
           </View>
-          <TouchableOpacity 
-            style={styles.logoutButton} 
-            onPress={() => router.replace('/')}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="log-out-outline" size={22} color="#FF4C4C" />
+          <TouchableOpacity style={styles.botaoSair} onPress={sair}>
+            <Ionicons name="log-out-outline" size={22} color="#FF98B9" />
           </TouchableOpacity>
         </View>
 
-        {/* CARTÃO DE PRÓXIMO AGENDAMENTO */}
-        <View style={styles.bannerCard}>
-          <Text style={styles.bannerTitle}>Próximo Agendamento</Text>
-          <Text style={styles.bannerService}>Spa dos Pés</Text>
-          <Text style={styles.bannerInfo}>
-            <Ionicons name="calendar-outline" size={14} /> Quinta-feira, 08/10 às 14:30
-          </Text>
-        </View>
+        <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+          
+          <Text style={styles.secaoTitulo}>Os Meus Agendamentos</Text>
+          {meusAgendamentos.length === 0 ? (
+            <View style={styles.vazioCard}>
+              <Text style={styles.vazioTexto}>Ainda não tens agendamentos ativos.</Text>
+            </View>
+          ) : (
+            meusAgendamentos.map((item) => (
+              <View key={item.id} style={styles.agendamentoCard}>
+                <View>
+                  <Text style={styles.agendamentoTitulo}>{item.servicoNome}</Text>
+                  <Text style={styles.agendamentoSub}>Estado: {item.status}</Text>
+                </View>
+                <Text style={styles.agendamentoValor}>R$ {Number(item.preco).toFixed(2).replace('.', ',')}</Text>
+              </View>
+            ))
+          )}
 
-        <Text style={styles.sectionTitle}>Acesso Rápido</Text>
-        
-        {/* BOTÃO DE AÇÃO RÁPIDA */}
-        <TouchableOpacity 
-          style={styles.actionCard}
-          onPress={() => router.push('/(cliente)/explorar')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.actionIconBox}>
-            <Ionicons name="sparkles" size={22} color="#FF98B9" />
-          </View>
-          <View style={styles.actionInfo}>
-            <Text style={styles.actionTitle}>Agendar Novo Serviço</Text>
-            <Text style={styles.actionSub}>Escolha entre manicures, spa e alongamentos</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="rgba(209, 209, 209, 0.6)" />
-        </TouchableOpacity>
+          <Text style={styles.secaoTitulo}>Serviços Disponíveis</Text>
+          {servicos.map((item) => (
+            <View key={item.id} style={styles.card}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.cardTitulo}>{item.nome}</Text>
+                <Text style={styles.cardSub}>Duração: {item.tempo} min</Text>
+              </View>
+              <View style={{ alignItems: 'flex-end', marginRight: 15 }}>
+                <Text style={styles.cardValor}>R$ {Number(item.preco).toFixed(2).replace('.', ',')}</Text>
+              </View>
+              <TouchableOpacity style={styles.botaoAgendar} onPress={() => agendarServico(item)}>
+                <Text style={styles.textoAgendar}>Agendar</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
 
-      </ScrollView>
-    </SafeAreaView>
+          <Text style={styles.secaoTitulo}>Pacotes Promocionais</Text>
+          {pacotes.map((item) => (
+            <View key={item.id} style={styles.card}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.cardTitulo}>{item.nome}</Text>
+                <Text style={styles.cardSub}>{item.descricao}</Text>
+              </View>
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={styles.cardValor}>R$ {Number(item.preco).toFixed(2).replace('.', ',')}</Text>
+              </View>
+            </View>
+          ))}
+
+        </ScrollView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#434643' 
-  },
-  scrollContent: { 
-    paddingHorizontal: 24, 
-    paddingTop: 15,
-    paddingBottom: 30,
-  },
-  headerRow: { 
-    flexDirection: 'row', 
-    justifyContent: 'center', // Centraliza o bloco de texto
-    alignItems: 'center', 
-    marginBottom: 30,
-    position: 'relative', // Permite o posicionamento absoluto do botão
-    minHeight: 50, // Garante altura suficiente para o botão
-  },
-  headerTextContainer: {
-    alignItems: 'center', // Centraliza o texto dentro do seu próprio bloco
-  },
-  greeting: { 
-    fontSize: 26, 
-    fontWeight: 'bold', 
-    color: '#FF98B9', 
-    letterSpacing: 0.5,
-    textAlign: 'center',
-  },
-  subtitle: { 
-    fontSize: 13, 
-    color: 'rgba(209, 209, 209, 0.8)', 
-    marginTop: 4,
-    textAlign: 'center',
-  },
-  logoutButton: { 
-    position: 'absolute', // Fixa o botão à direita sem afetar o centro
-    right: 0,
-    width: 44, 
-    height: 44, 
-    borderRadius: 15, 
-    backgroundColor: 'rgba(255, 76, 76, 0.15)', 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    borderWidth: 1, 
-    borderColor: 'rgba(255, 76, 76, 0.3)' 
-  },
-  bannerCard: { 
-    backgroundColor: '#434643', 
-    borderRadius: 24, 
-    padding: 24, 
-    borderWidth: 1, 
-    borderColor: '#595959', 
-    marginBottom: 35,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  bannerTitle: { 
-    fontSize: 12, 
-    color: 'rgba(209, 209, 209, 0.8)', 
-    marginBottom: 8, 
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 1
-  },
-  bannerService: { 
-    fontSize: 24, 
-    fontWeight: 'bold', 
-    color: '#FFFFFF', 
-    marginBottom: 8 
-  },
-  bannerInfo: { 
-    fontSize: 14, 
-    color: '#FF98B9',
-    fontWeight: '500'
-  },
-  sectionTitle: { 
-    fontSize: 18, 
-    fontWeight: 'bold', 
-    color: '#FFFFFF', 
-    marginBottom: 16,
-    letterSpacing: 0.5
-  },
-  actionCard: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    backgroundColor: '#434643', 
-    padding: 18, 
-    borderRadius: 20, 
-    borderWidth: 1, 
-    borderColor: '#595959',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  actionIconBox: { 
-    width: 48, 
-    height: 48, 
-    borderRadius: 24, 
-    backgroundColor: 'rgba(67, 70, 67, 0.8)', 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    marginRight: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(107, 110, 107, 0.5)',
-  },
-  actionInfo: { 
-    flex: 1 
-  },
-  actionTitle: { 
-    fontSize: 16, 
-    fontWeight: 'bold', 
-    color: '#FFFFFF', 
-    marginBottom: 4 
-  },
-  actionSub: { 
-    fontSize: 13, 
-    color: 'rgba(209, 209, 209, 0.7)',
-    lineHeight: 18
-  },
+  tela: { flex: 1, paddingHorizontal: 24 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 20 },
+  saudacao: { fontSize: 24, color: '#FF98B9', fontWeight: 'bold', letterSpacing: 0.5 },
+  subtitulo: { fontSize: 13, color: 'rgba(209, 209, 209, 0.7)', marginTop: 2 },
+  botaoSair: { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(89, 89, 89, 0.6)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(107, 110, 107, 0.5)' },
+  scrollContainer: { paddingBottom: 30 },
+  secaoTitulo: { fontSize: 16, fontWeight: '600', color: '#FF98B9', marginBottom: 15, marginTop: 15, letterSpacing: 0.5 },
+  vazioCard: { backgroundColor: 'rgba(67, 70, 67, 0.8)', padding: 18, borderRadius: 16, alignItems: 'center', marginBottom: 10, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' },
+  vazioTexto: { color: 'rgba(209, 209, 209, 0.6)', fontSize: 13 },
+  agendamentoCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(67, 70, 67, 0.8)', padding: 16, borderRadius: 16, marginBottom: 10, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' },
+  agendamentoTitulo: { color: '#FFF', fontSize: 15, fontWeight: 'bold' },
+  agendamentoSub: { color: 'rgba(209, 209, 209, 0.6)', fontSize: 12, marginTop: 2 },
+  agendamentoValor: { color: '#FF98B9', fontSize: 15, fontWeight: 'bold' },
+  card: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(89, 89, 89, 0.45)', padding: 16, borderRadius: 18, marginBottom: 12, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' },
+  cardTitulo: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
+  cardSub: { color: 'rgba(209, 209, 209, 0.6)', fontSize: 12, marginTop: 4 },
+  cardValor: { color: '#FF98B9', fontSize: 15, fontWeight: 'bold' },
+  botaoAgendar: { backgroundColor: '#FF98B9', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, marginLeft: 10 },
+  textoAgendar: { color: '#434643', fontWeight: 'bold', fontSize: 12 }
 });
