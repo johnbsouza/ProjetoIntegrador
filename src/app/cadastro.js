@@ -7,16 +7,31 @@ import { useState } from 'react';
 import { Alert, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth, db } from '../config/firebase';
+
 export default function TelaCadastro() {
   const router = useRouter();
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [telefone, setTelefone] = useState('');
-  const [nivelAcesso, setNivelAcesso] = useState('cliente');
   const [carregando, setCarregando] = useState(false);
 
-  async function registarUtilizador() {
+  function formatarTelefone(valor) {
+    const apenasNumeros = valor.replace(/\D/g, '').substring(0, 11);
+    let formatado = apenasNumeros;
+
+    if (apenasNumeros.length > 2 && apenasNumeros.length <= 7) {
+      formatado = `(${apenasNumeros.substring(0, 2)}) ${apenasNumeros.substring(2)}`;
+    } else if (apenasNumeros.length > 7) {
+      formatado = `(${apenasNumeros.substring(0, 2)}) ${apenasNumeros.substring(2, 7)}-${apenasNumeros.substring(7)}`;
+    } else if (apenasNumeros.length > 0) {
+      formatado = `(${apenasNumeros}`;
+    }
+
+    setTelefone(formatado);
+  }
+
+  async function cadastrarUtilizador() {
     if (!nome || !email || !senha || !telefone) {
       Alert.alert('Atenção', 'Preencha todos os campos.');
       return;
@@ -31,8 +46,8 @@ export default function TelaCadastro() {
         nome,
         email,
         telefone,
-        nivelAcesso,
-        comissaoPorcentagem: nivelAcesso === 'profissional' ? 50 : 0,
+        nivelAcesso: 'cliente',
+        comissaoPorcentagem: 0,
         dataCriacao: serverTimestamp(),
       });
 
@@ -42,7 +57,7 @@ export default function TelaCadastro() {
       ]);
     } catch (error) {
       setCarregando(false);
-      Alert.alert('Erro no Registo', error.message);
+      Alert.alert('Erro no Cadastro', error.message);
     }
   }
 
@@ -80,11 +95,11 @@ export default function TelaCadastro() {
 
           <TextInput 
             style={styles.input} 
-            placeholder="Telefone / WhatsApp" 
+            placeholder="Telefone" 
             placeholderTextColor="rgba(255, 255, 255, 0.4)"
             keyboardType="phone-pad"
             value={telefone}
-            onChangeText={setTelefone}
+            onChangeText={formatarTelefone}
           />
 
           <TextInput 
@@ -96,29 +111,12 @@ export default function TelaCadastro() {
             onChangeText={setSenha}
           />
 
-          <Text style={styles.labelPerfil}>Tipo de Conta:</Text>
-          <View style={styles.perfisRow}>
-            <TouchableOpacity 
-              style={[styles.perfilBtn, nivelAcesso === 'cliente' && styles.perfilAtivo]} 
-              onPress={() => setNivelAcesso('cliente')}
-            >
-              <Text style={[styles.perfilTxt, nivelAcesso === 'cliente' && styles.perfilTxtAtivo]}>Cliente</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={[styles.perfilBtn, nivelAcesso === 'profissional' && styles.perfilAtivo]} 
-              onPress={() => setNivelAcesso('profissional')}
-            >
-              <Text style={[styles.perfilTxt, nivelAcesso === 'profissional' && styles.perfilTxtAtivo]}>Profissional</Text>
-            </TouchableOpacity>
-          </View>
-
           <TouchableOpacity 
             style={[styles.botaoSalvar, carregando && { opacity: 0.7 }]} 
-            onPress={registarUtilizador}
+            onPress={cadastrarUtilizador}
             disabled={carregando}
           >
-            <Text style={styles.textoBotao}>{carregando ? 'A criar conta...' : 'Registar'}</Text>
+            <Text style={styles.textoBotao}>{carregando ? 'A cadastrar...' : 'Cadastrar'}</Text>
           </TouchableOpacity>
 
         </ScrollView>
@@ -134,12 +132,6 @@ const styles = StyleSheet.create({
   tituloTopo: { fontSize: 22, color: '#FF98B9', fontWeight: 'bold', marginLeft: 15, letterSpacing: 0.5 },
   scrollContent: { paddingBottom: 30 },
   input: { backgroundColor: 'rgba(89, 89, 89, 0.6)', color: '#FFF', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, fontSize: 15, borderWidth: 1, borderColor: 'rgba(209, 209, 209, 0.15)', marginBottom: 15 },
-  labelPerfil: { color: '#FFF', fontSize: 14, fontWeight: '600', marginBottom: 10, marginTop: 5 },
-  perfisRow: { flexDirection: 'row', gap: 12, marginBottom: 25 },
-  perfilBtn: { flex: 1, backgroundColor: 'rgba(89, 89, 89, 0.4)', paddingVertical: 14, borderRadius: 12, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' },
-  perfilAtivo: { backgroundColor: '#FF98B9', borderColor: '#FF98B9' },
-  perfilTxt: { color: '#FFF', fontWeight: '600', fontSize: 15 },
-  perfilTxtAtivo: { color: '#434643', fontWeight: 'bold' },
-  botaoSalvar: { backgroundColor: '#FF98B9', paddingVertical: 16, borderRadius: 12, alignItems: 'center' },
+  botaoSalvar: { backgroundColor: '#FF98B9', paddingVertical: 16, borderRadius: 12, alignItems: 'center', marginTop: 10 },
   textoBotao: { color: '#434643', fontWeight: 'bold', fontSize: 16 }
 });

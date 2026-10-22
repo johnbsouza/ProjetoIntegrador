@@ -90,6 +90,20 @@ export default function AdminLayout() {
             ),
           }} 
         />
+        <Drawer.Screen 
+          name="gerenciar-usuarios" 
+          options={{ 
+            drawerLabel: 'Controle de Acessos', 
+            headerTitle: () => (
+              <View style={{ alignItems: 'flex-start' }}>
+                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FF98B9' }}>Controlo de Acessos</Text>
+              </View>
+            ),
+            drawerIcon: ({ color, size }) => (
+              <Ionicons name="shield-checkmark-outline" size={size} color={color} />
+            ),
+          }} 
+        />
 
         <Drawer.Screen 
           name="servicos" 
