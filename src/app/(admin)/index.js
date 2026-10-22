@@ -7,6 +7,8 @@ import { useEffect, useState } from 'react';
 import { ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth, db } from '../../config/firebase';
+
+
 export default function PainelAdmin() {
   const router = useRouter();
   const [totalClientes, setTotalClientes] = useState(0);
