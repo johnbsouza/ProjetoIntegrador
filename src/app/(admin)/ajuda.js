@@ -1,11 +1,24 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Linking, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function TelaAjuda() {
   const router = useRouter();
+
+  const abrirSuporte = async () => {
+    const url = 'mailto:suporte@lirium.com?subject=Suporte%20Lirium';
+    try {
+      await Linking.openURL(url);
+    } catch (e) {
+      Alert.alert('Erro', 'Não foi possível abrir o contacto com o suporte.');
+    }
+  };
+
+  const abrirGuia = () => {
+    router.push('/guia');
+  };
 
   return (
     <LinearGradient colors={['#1E201E', '#434643', '#1A1C1A']} style={{ flex: 1 }}>
@@ -26,6 +39,10 @@ export default function TelaAjuda() {
             <Text style={styles.cardTexto}>
               O sistema Lirium Esmalteria & Spa foi desenvolvido para gerir agendamentos, serviços, pacotes e comissões de forma integrada e segura através do painel administrativo.
             </Text>
+            <TouchableOpacity style={styles.botao} onPress={abrirGuia}>
+              <Ionicons name="book-outline" size={18} color="#FF98B9" />
+              <Text style={styles.botaoTexto}>Ver guia completo</Text>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.card}>
@@ -34,6 +51,10 @@ export default function TelaAjuda() {
             <Text style={styles.cardTexto}>
               Em caso de dúvidas com o acesso ou relatórios financeiros, entre em contacto com o suporte administrativo através do e-mail suporte@lirium.com.
             </Text>
+            <TouchableOpacity style={styles.botao} onPress={abrirSuporte}>
+              <Ionicons name="mail-outline" size={18} color="#FF98B9" />
+              <Text style={styles.botaoTexto}>Falar com o suporte</Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -49,5 +70,7 @@ const styles = StyleSheet.create({
   scroll: { paddingBottom: 30 },
   card: { backgroundColor: 'rgba(67, 70, 67, 0.8)', padding: 20, borderRadius: 20, marginBottom: 15, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' },
   cardTitulo: { color: '#FFF', fontSize: 16, fontWeight: 'bold', marginBottom: 8 },
-  cardTexto: { color: 'rgba(209, 209, 209, 0.8)', fontSize: 14, lineHeight: 20 }
+  cardTexto: { color: 'rgba(209, 209, 209, 0.8)', fontSize: 14, lineHeight: 20 },
+  botao: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 16, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: '#FF98B9' },
+  botaoTexto: { color: '#FF98B9', fontWeight: 'bold', fontSize: 14 }
 });

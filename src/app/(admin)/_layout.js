@@ -201,6 +201,15 @@ export default function AdminLayout() {
           )
           }} />
 
+          <Drawer.Screen name="guia" options={{
+          drawerItemStyle: { display: 'none' },
+          headerTitle: () => (
+            <View style={{ alignItems: 'flex-start' }}>
+              <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FF98B9' }}>Guia da Plataforma</Text>
+            </View>
+  )
+}} />
+
       </Drawer>
     </GestureHandlerRootView>
   );
