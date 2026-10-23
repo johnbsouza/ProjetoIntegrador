@@ -102,7 +102,7 @@ export default function GerenciarUsuariosScreen() {
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={20} color="#FF98B9" />
           </TouchableOpacity>
-          <Text style={styles.tituloTopo}>Controlo de Acessos</Text>
+          <Text style={styles.tituloTopo}>Controle de Acessos</Text>
         </View>
 
         <View style={styles.buscaContainer}>
