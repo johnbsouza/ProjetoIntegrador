@@ -105,7 +105,7 @@ export default function TelaEstoqueCaixa() {
           <TouchableOpacity style={estilos.backButton} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={20} color="#FF98B9" />
           </TouchableOpacity>
-          <Text style={estilos.tituloTopo}>Caixa & Estoque</Text>
+          <Text style={estilos.tituloTopo}>Caixa e Estoque</Text>
           <TouchableOpacity style={estilos.addButton} onPress={() => setModalVisivel(true)}>
             <Ionicons name="add" size={22} color="#434643" />
           </TouchableOpacity>
@@ -141,7 +141,7 @@ export default function TelaEstoqueCaixa() {
               
               <TextInput 
                 style={estilos.input} 
-                placeholder="Nome do Produto / Insumo" 
+                placeholder="Nome do Produto" 
                 placeholderTextColor="rgba(255, 255, 255, 0.4)"
                 maxLength={40}
                 value={nome}

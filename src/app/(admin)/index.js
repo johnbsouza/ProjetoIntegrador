@@ -115,7 +115,7 @@ export default function PainelAdmin() {
             <Ionicons name="chevron-forward" size={20} color="rgba(255, 255, 255, 0.4)" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuCard} onPress={() => router.push('/(admin)/profissionais')}>
+          <TouchableOpacity style={styles.menuCard} onPress={() => router.push('/(admin)/lista-profissionais')}>
             <View style={styles.iconBox}><Ionicons name="ribbon-outline" size={22} color="#FF98B9" /></View>
             <View style={styles.menuTextos}>
               <Text style={styles.menuTitulo}>Equipe & Comissões</Text>
@@ -142,7 +142,7 @@ export default function PainelAdmin() {
             <Ionicons name="chevron-forward" size={20} color="rgba(255, 255, 255, 0.4)" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuCard} onPress={() => router.push('/(admin)/estoque')}>
+          <TouchableOpacity style={styles.menuCard} onPress={() => router.push('/(admin)/caixa')}>
             <View style={styles.iconBox}><Ionicons name="cube-outline" size={22} color="#FF98B9" /></View>
             <View style={styles.menuTextos}>
               <Text style={styles.menuTitulo}>Caixa & Estoque</Text>

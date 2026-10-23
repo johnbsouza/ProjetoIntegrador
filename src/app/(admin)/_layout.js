@@ -79,10 +79,10 @@ export default function AdminLayout() {
         <Drawer.Screen 
           name="lista-profissionais" 
           options={{ 
-            drawerLabel: 'Equipe e Profissionais', 
+            drawerLabel: 'Equipe & Comissões', 
             headerTitle: () => (
               <View style={{ alignItems: 'flex-start' }}>
-                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FF98B9' }}>Gestão de Equipe</Text>
+                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FF98B9' }}>Equipe e Comissões</Text>
               </View>
             ),
             drawerIcon: ({ color, size }) => (
@@ -138,7 +138,7 @@ export default function AdminLayout() {
         <Drawer.Screen 
           name="caixa" 
           options={{ 
-            drawerLabel: 'Caixa e Estoque', 
+            drawerLabel: 'Caixa & Estoque', 
             headerTitle: () => (
               <View style={{ alignItems: 'flex-start' }}>
                 <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FF98B9' }}>Caixa e Estoque</Text>
