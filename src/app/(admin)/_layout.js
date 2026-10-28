@@ -1,11 +1,22 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Drawer } from 'expo-router/drawer';
+import { signOut } from 'firebase/auth';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { auth } from '../../config/firebase';
 
 export default function AdminLayout() {
   const router = useRouter();
+
+  async function Sair() {
+    try {
+      await signOut(auth);
+      router.replace('/');
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+    }
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -24,7 +35,7 @@ export default function AdminLayout() {
           headerRight: () => (
             <TouchableOpacity 
               style={{ marginRight: 15, padding: 8, backgroundColor: 'rgba(255, 76, 76, 0.1)', borderRadius: 10, borderWidth: 1, borderColor: '#FF4C4C' }} 
-              onPress={() => router.replace('/')}
+              onPress={Sair}
             >
               <Ionicons name="log-out-outline" size={20} color="#FF4C4C" />
             </TouchableOpacity>

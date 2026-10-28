@@ -42,17 +42,29 @@ export default function TelaCadastro() {
       const credencial = await createUserWithEmailAndPassword(auth, email, senha);
       const uid = credencial.user.uid;
 
+      // Lógica inteligente de níveis de acesso por e-mail
+      let tipoAcesso = 'usuario'; // Padrão para clientes
+
+      // Substitua pelo seu e-mail oficial de Administrador
+      if (email.includes('.admin@lirium.com')) {
+        tipoAcesso = 'admin';
+      } else if (email.includes('.profissional@lirium.com')) {
+        tipoAcesso = 'profissional';
+      } else if (email.includes('@lirium.com')) {
+        tipoAcesso = 'cliente'
+      }
+
       await setDoc(doc(db, 'usuarios', uid), {
         nome,
         email,
         telefone,
-        nivelAcesso: 'cliente',
-        comissaoPorcentagem: 0,
+        nivelAcesso: tipoAcesso, // Salva dinamicamente como 'admin', 'profissional' ou 'usuario'
+        comissaoPorcentagem: tipoAcesso === 'profissional' ? 40 : 0,
         dataCriacao: serverTimestamp(),
       });
 
       setCarregando(false);
-      Alert.alert('Sucesso', 'Conta criada com sucesso!', [
+      Alert.alert('Sucesso', `Conta criada com sucesso como [${tipoAcesso.toLowerCase()}]`, [
         { text: 'OK', onPress: () => router.replace('/') }
       ]);
     } catch (error) {

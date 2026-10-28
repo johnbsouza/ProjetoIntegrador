@@ -1,11 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { addDoc, collection, deleteDoc, doc, getDocs, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { Alert, FlatList, Modal, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { db } from '../../config/firebase';
+
+
 export default function TelaServicos() {
   const router = useRouter();
   const [servicos, setServicos] = useState([]);
@@ -14,8 +16,9 @@ export default function TelaServicos() {
   const [precoFormatado, setPrecoFormatado] = useState('');
   const [tempoMinutos, setTempoMinutos] = useState('');
   const [idEditando, setIdEditando] = useState(null);
+  const [carregando, setCarregando] = useState(true)
 
-  const buscarServicos = async () => {
+  /*const buscarServicos = async () => {
     try {
       const querySnapshot = await getDocs(collection(db, 'servicos'));
       const lista = [];
@@ -26,11 +29,55 @@ export default function TelaServicos() {
     } catch (error) {
       console.error("Erro ao buscar serviços:", error);
     }
-  };
+  };*/
 
   useEffect(() => {
-    buscarServicos();
+    {/* buscarServicos() */ }
+    const referencia = collection(db, 'servicos');
+
+    const cancelar = onSnapshot(
+      referencia,
+      (snapshot) => {
+        const lista = snapshot.docs.map((item) => ({
+          id: item.id,
+          ...item.data(),
+        }));
+
+        setServicos(lista)
+        setCarregando(false)
+      },
+      (erro) => {
+        console.error('Erro ao buscar os serviços:', erro)
+        setCarregando(false);
+        Alert.alert('Erro', 'Não foi possível carregar os serviços')
+      }
+    )
+    return cancelar;
   }, []);
+
+  function excluirServico(id) {
+    Alert.alert(
+      'Excluir serviço',
+      'Deseja realmente excluir este serviço?',
+      [
+        {text: 'Cancelar', style: 'cancel'},
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteDoc(doc(db, 'servicos', id));
+              Alert.alert('Sucesso', 'Serviço excluído.');
+              {/*buscarServicos();*/}
+            } catch (error) {
+              console.error('Erro ao excluir serviço:', error)
+              Alert.alert('Erro', 'Não foi possível excluir o serviço.');
+            }
+          }
+        }
+      ]
+    )
+  }
 
   function formatarMoeda(valor) {
     const apenasNumeros = valor.replace(/\D/g, '');
@@ -78,15 +125,6 @@ export default function TelaServicos() {
       buscarServicos();
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível guardar o serviço.');
-    }
-  }
-
-  async function excluirServico(id) {
-    try {
-      await deleteDoc(doc(db, 'servicos', id));
-      buscarServicos();
-    } catch (error) {
-      Alert.alert('Erro', 'Não foi possível excluir.');
     }
   }
 
