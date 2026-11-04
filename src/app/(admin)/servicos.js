@@ -79,6 +79,41 @@ export default function TelaServicos() {
     )
   }
 
+  function renderServico({ item }) {
+    return (
+      <View style={estilos.card}>
+        <View style={{ flex: 1 }}>
+          <Text style={estilos.cardTitulo}>{item.nome}</Text>
+          <Text style={estilos.cardSub}>
+            Duração: {converterMinutosParaHoras(item.tempo)} minutos
+          </Text>
+        </View>
+        <View style={{ alignItems: 'flex-end', marginRight: 15 }}>
+          <Text style={estilos.cardValor}>R$ {Number(item.preco).toFixed(2).replace('.', ',')}</Text>
+        </View>
+
+        <TouchableOpacity
+          onPress={() => abrirEdicao(item)}
+          style={estilos.acaoBtn}>
+          <Ionicons
+            name="create-outline"
+            size={18}
+            color="#FF98B9" />
+        </TouchableOpacity>
+
+
+        <TouchableOpacity
+          onPress={() => excluirServico(item.id)}
+          style={estilos.acaoBtn}>
+          <Ionicons
+            name="trash-outline"
+            size={18}
+            color="#FF98B9" />
+        </TouchableOpacity>
+      </View>
+    )
+  }
+
   function formatarMoeda(valor) {
     const apenasNumeros = valor.replace(/\D/g, '');
     const numero = Number(apenasNumeros) / 100;
@@ -122,7 +157,7 @@ export default function TelaServicos() {
       }
 
       fecharModal();
-      buscarServicos();
+      //buscarServicos();
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível guardar o serviço.');
     }
@@ -131,7 +166,7 @@ export default function TelaServicos() {
   function abrirEdicao(item) {
     setIdEditando(item.id);
     setNome(item.nome);
-    setPrecoFormatado((item.preco * 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
+    setPrecoFormatado((item.preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
     setTempoMinutos(String(item.tempo));
     setModalVisivel(true);
   }
@@ -148,7 +183,6 @@ export default function TelaServicos() {
     <LinearGradient colors={['#1E201E', '#434643', '#1A1C1A']} style={{ flex: 1 }}>
       <SafeAreaView style={estilos.tela}>
         <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-        
         <View style={estilos.header}>
           <TouchableOpacity style={estilos.backButton} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={20} color="#FF98B9" />
@@ -186,28 +220,28 @@ export default function TelaServicos() {
           <View style={estilos.modalFundo}>
             <View style={estilos.modalCard}>
               <Text style={estilos.modalTitulo}>{idEditando ? 'Editar Serviço' : 'Novo Serviço'}</Text>
-              
-              <TextInput 
-                style={estilos.input} 
-                placeholder="Nome do Serviço" 
+
+              <TextInput
+                style={estilos.input}
+                placeholder="Nome do Serviço"
                 placeholderTextColor="rgba(255, 255, 255, 0.4)"
                 maxLength={40}
                 value={nome}
                 onChangeText={setNome}
               />
-              
-              <TextInput 
-                style={estilos.input} 
-                placeholder="Preço (R$)" 
+
+              <TextInput
+                style={estilos.input}
+                placeholder="Preço (R$)"
                 placeholderTextColor="rgba(255, 255, 255, 0.4)"
                 keyboardType="numeric"
                 value={precoFormatado}
                 onChangeText={(text) => setPrecoFormatado(formatarMoeda(text))}
               />
 
-              <TextInput 
-                style={estilos.input} 
-                placeholder="Tempo em minutos (ex: 90)" 
+              <TextInput
+                style={estilos.input}
+                placeholder="Tempo em minutos (ex: 90)"
                 placeholderTextColor="rgba(255, 255, 255, 0.4)"
                 keyboardType="numeric"
                 value={tempoMinutos}
