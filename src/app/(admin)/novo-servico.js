@@ -13,7 +13,6 @@ export default function NovoServicoScreen() {
   const [salvando, setSalvando] = useState(false);
 
   async function salvarServico() {
-
     if (!nome.trim() || !preco.trim() || !duracao.trim()) {
       Alert.alert('Atenção', 'Por favor, preencha todos os campos.');
       return;
