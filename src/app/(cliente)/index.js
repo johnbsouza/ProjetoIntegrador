@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { signOut } from 'firebase/auth';
@@ -101,9 +100,7 @@ export default function PainelCliente() {
             <Text style={styles.saudacao}>Olá, Bem-vinda!</Text>
             <Text style={styles.subtitulo}>Lirium Esmalteria & Spa</Text>
           </View>
-          <TouchableOpacity style={styles.botaoSair} onPress={sair}>
-            <Ionicons name="log-out-outline" size={22} color="#FF98B9" />
-          </TouchableOpacity>
+          
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>

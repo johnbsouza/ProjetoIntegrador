@@ -1,91 +1,171 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { collection, doc, getDocs, query, updateDoc, where } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { auth, db } from '../../config/firebase';
 
-export default function PainelProfissionalScreen() {
-  const router = useRouter();
-  const atendimentos = [
-    { id: 1, cliente: 'Mariana Alves', servico: 'Spa dos Pés', horario: '09:00', status: 'Concluído', icon: 'checkmark-circle' },
-    { id: 2, cliente: 'Sofia Costa', servico: 'Alongamento em Gel', horario: '11:00', status: 'Em andamento', icon: 'sync-circle' },
-    { id: 3, cliente: 'Beatriz Lima', servico: 'Manicure Clássica', horario: '14:30', status: 'Pendente', icon: 'time' },
-  ];
+export default function AgendaProfissionalScreen() {
+  const [agendamentos, setAgendamentos] = useState([]);
+  const [carregando, setCarregando] = useState(true);
+  const dataHoje = new Date().toISOString().split('T')[0];
+
+  useEffect(() => {
+    carregarAgenda();
+  }, []);
+
+  async function carregarAgenda() {
+    setCarregando(true);
+    try {
+      const user = auth.currentUser;
+      const uid = user ? user.uid : 'prof_default';
+
+      const q = query(
+        collection(db, 'agendamentos'),
+        where('idProfissional', '==', uid),
+        where('data', '==', dataHoje)
+      );
+
+      const querySnapshot = await getDocs(q);
+      const lista = [];
+      querySnapshot.forEach((docSnap) => {
+        lista.push({ id: docSnap.id, ...docSnap.data() });
+      });
+
+      lista.sort((a, b) => (a.horario || '').localeCompare(b.horario || ''));
+      setAgendamentos(lista);
+    } catch (error) {
+      console.error('Erro ao carregar agenda:', error);
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  async function handleConcluirServico(idAgendamento) {
+    try {
+      const refDoc = doc(db, 'agendamentos', idAgendamento);
+      await updateDoc(refDoc, { status: 'concluido' });
+
+      Alert.alert('Sucesso', 'Serviço marcado como concluído!');
+      setAgendamentos((prev) =>
+        prev.map((item) =>
+          item.id === idAgendamento ? { ...item, status: 'concluido' } : item
+        )
+      );
+    } catch (error) {
+      console.error('Erro ao concluir serviço:', error);
+      Alert.alert('Erro', 'Não foi possível atualizar o status.');
+    }
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>Olá, Profissional ✨</Text>
-          <Text style={styles.subtitle}>Sua agenda de hoje</Text>
-        </View>
-        <TouchableOpacity 
-          style={styles.logoutButton} 
-          onPress={() => router.replace('/')}
-        >
-          <Ionicons name="log-out-outline" size={20} color="#FF4C4C" />
-        </TouchableOpacity>
+        <Text style={styles.headerTitulo}>Atendimentos de Hoje</Text>
+        <Text style={styles.headerData}>{dataHoje}</Text>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.commissionCard}>
-          <Text style={styles.commissionTitle}>Comissões de Hoje</Text>
-          <Text style={styles.commissionValue}>R$ 185,00</Text>
-          <View style={styles.commissionStats}>
-            <Text style={styles.statText}>3 Atendimentos</Text>
-            <Text style={styles.statText}>•</Text>
-            <Text style={styles.statText}>100% de ocupação</Text>
-          </View>
-        </View>
+      {carregando ? (
+        <ActivityIndicator color="#FF98B9" style={{ marginTop: 40 }} />
+      ) : (
+        <FlatList
+          data={agendamentos}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ padding: 20 }}
+          ListEmptyComponent={
+            <Text style={styles.textoVazio}>Nenhum agendamento marcado para hoje.</Text>
+          }
+          renderItem={({ item }) => {
+            const isConcluido = item.status === 'concluido';
+            const inicial = item.nomeCliente ? item.nomeCliente.charAt(0).toUpperCase() : 'C';
 
-        <Text style={styles.sectionTitle}>Atendimentos do Dia</Text>
-        
-        {atendimentos.map((agendamento) => {
-          let statusColor = '#FFC107'; 
-          if (agendamento.status === 'Concluído') statusColor = '#FF98B9';
-          if (agendamento.status === 'Em andamento') statusColor = '#A3B19B';
-
-          return (
-            <View key={agendamento.id} style={styles.appointmentCard}>
-              <View style={[styles.timelineLine, { backgroundColor: statusColor }]} />
-              <View style={styles.appointmentContent}>
-                <View style={styles.appointmentHeader}>
-                  <Text style={styles.timeText}>{agendamento.horario}</Text>
-                  <View style={styles.statusBadge}>
-                    <Ionicons name={agendamento.icon} size={14} color={statusColor} />
-                    <Text style={[styles.statusText, { color: statusColor }]}>{agendamento.status}</Text>
-                  </View>
+            return (
+              <View style={[styles.cardItem, isConcluido && styles.cardConcluido]}>
+                <View style={styles.horarioBox}>
+                  <Ionicons name="time-outline" size={16} color="#FF98B9" />
+                  <Text style={styles.horarioTexto}>{item.horario}</Text>
                 </View>
-                <Text style={styles.clientName}>{agendamento.cliente}</Text>
-                <Text style={styles.serviceName}>{agendamento.servico}</Text>
+
+                {/* FOTO DO CLIENTE */}
+                <View style={styles.avatarContainer}>
+                  {item.fotoCliente ? (
+                    <Image source={{ uri: item.fotoCliente }} style={styles.avatarImage} />
+                  ) : (
+                    <Text style={styles.avatarText}>{inicial}</Text>
+                  )}
+                </View>
+
+                <View style={styles.infoBox}>
+                  <Text style={styles.nomeCliente}>{item.nomeCliente || 'Cliente'}</Text>
+                  <Text style={styles.nomeServico}>{item.nomeServico || 'Serviço'}</Text>
+                  <Text style={styles.precoTexto}>R$ {parseFloat(item.preco || 0).toFixed(2)}</Text>
+                </View>
+
+                <TouchableOpacity
+                  disabled={isConcluido}
+                  style={[styles.btnCheck, isConcluido && styles.btnCheckDone]}
+                  onPress={() => handleConcluirServico(item.id)}
+                >
+                  <Ionicons
+                    name={isConcluido ? 'checkmark-done-circle' : 'checkmark-circle-outline'}
+                    size={28}
+                    color={isConcluido ? '#4CAF50' : '#FF98B9'}
+                  />
+                </TouchableOpacity>
               </View>
-            </View>
-          );
-        })}
-      </ScrollView>
+            );
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#434643' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 40, paddingBottom: 20 },
-  greeting: { fontSize: 24, fontWeight: 'bold', color: '#FF98B9' },
-  subtitle: { fontSize: 14, color: '#D1D1D1', marginTop: 4 },
-  logoutButton: { padding: 10, backgroundColor: 'rgba(255, 76, 76, 0.1)', borderRadius: 10, borderWidth: 1, borderColor: '#FF4C4C', justifyContent: 'center', alignItems: 'center' },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
-  commissionCard: { backgroundColor: '#595959', borderRadius: 15, padding: 25, borderWidth: 1, borderColor: '#6B6E6B', marginBottom: 30, alignItems: 'center' },
-  commissionTitle: { fontSize: 16, color: '#D1D1D1', marginBottom: 10 },
-  commissionValue: { fontSize: 40, fontWeight: 'bold', color: '#FFFFFF', marginBottom: 15 },
-  commissionStats: { flexDirection: 'row', gap: 10, backgroundColor: '#434643', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: '#6B6E6B' },
-  statText: { color: '#FF98B9', fontSize: 12, fontWeight: 'bold' },
-  sectionTitle: { fontSize: 20, fontWeight: 'bold', color: '#FFFFFF', marginBottom: 15 },
-  appointmentCard: { flexDirection: 'row', backgroundColor: '#595959', borderRadius: 12, marginBottom: 15, borderWidth: 1, borderColor: '#6B6E6B', overflow: 'hidden' },
-  timelineLine: { width: 6 },
-  appointmentContent: { flex: 1, padding: 15 },
-  appointmentHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  timeText: { fontSize: 16, fontWeight: 'bold', color: '#FFFFFF' },
-  statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#434643', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
-  statusText: { fontSize: 12, fontWeight: 'bold' },
-  clientName: { fontSize: 18, fontWeight: 'bold', color: '#FFFFFF', marginBottom: 4 },
-  serviceName: { fontSize: 14, color: '#D1D1D1' },
+  header: { padding: 20, backgroundColor: '#595959', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)' },
+  headerTitulo: { color: '#FFF', fontSize: 20, fontWeight: 'bold' },
+  headerData: { color: '#FF98B9', fontSize: 14, marginTop: 2 },
+  textoVazio: { color: '#D1D1D1', textAlign: 'center', marginTop: 40, fontSize: 15 },
+  cardItem: {
+    backgroundColor: '#595959',
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  cardConcluido: { opacity: 0.6, backgroundColor: '#3A3D3A' },
+  horarioBox: { alignItems: 'center', justifyContent: 'center', paddingRight: 12, borderRightWidth: 1, borderRightColor: 'rgba(255,255,255,0.1)' },
+  horarioTexto: { color: '#FFF', fontWeight: 'bold', fontSize: 13, marginTop: 3 },
+  avatarContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FF98B9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 12,
+    marginRight: 12,
+    overflow: 'hidden',
+  },
+  avatarImage: { width: 44, height: 44, borderRadius: 22 },
+  avatarText: { color: '#434643', fontSize: 18, fontWeight: 'bold' },
+  infoBox: { flex: 1 },
+  nomeCliente: { color: '#FFF', fontSize: 15, fontWeight: 'bold' },
+  nomeServico: { color: '#D1D1D1', fontSize: 12, marginTop: 2 },
+  precoTexto: { color: '#FF98B9', fontSize: 13, fontWeight: 'bold', marginTop: 3 },
+  btnCheck: { padding: 4 },
+  btnCheckDone: { opacity: 0.8 },
 });

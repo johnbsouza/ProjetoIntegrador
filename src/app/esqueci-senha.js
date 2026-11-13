@@ -1,182 +1,183 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { sendPasswordResetEmail } from 'firebase/auth';
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { auth } from '../config/firebase';
 
-export default function EsqueciSenhaScreen() {
+export default function EsqueciSenha() {
   const router = useRouter();
   const [email, setEmail] = useState('');
+  const [carregando, setCarregando] = useState(false);
 
-  function enviarInstrucoes() {
-    if (email === '') {
-      Alert.alert('Atenção', 'Por favor, informe o seu e-mail cadastrado.');
+  async function handleEnviarEmail() {
+    if (!email.trim()) {
+      Alert.alert('Campo Obrigatório', 'Por favor, digite o seu e-mail.');
       return;
     }
 
-    Alert.alert(
-      'E-mail Enviado',
-      'Se o e-mail estiver cadastrado, receberá as instruções para redefinir a sua senha em instantes.',
-      [{ text: 'OK', onPress: () => router.back() }]
-    );
+    setCarregando(true);
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
+      Alert.alert(
+        'E-mail Enviado',
+        'Enviamos um link de redefinição de senha para o e-mail informado. Verifique também a sua caixa de spam.',
+        [{ text: 'OK', onPress: () => router.back() }]
+      );
+    } catch (error) {
+      console.error('Erro ao enviar e-mail de redefinição:', error);
+      let mensagemErro = 'Não foi possível enviar o e-mail de redefinição.';
+      
+      switch (error.code) {
+        case 'auth/user-not-found':
+          mensagemErro = 'Nenhuma conta encontrada com este e-mail.';
+          break;
+        case 'auth/invalid-email':
+          mensagemErro = 'O formato do e-mail digitado é inválido.';
+          break;
+        case 'auth/too-many-requests':
+          mensagemErro = 'Muitas tentativas seguidas. Aguarde alguns minutos e tente novamente.';
+          break;
+      }
+      
+      Alert.alert('Erro', mensagemErro);
+    } finally {
+      setCarregando(false);
+    }
   }
 
   return (
-    <SafeAreaView style={estilos.tela}>
-      <StatusBar barStyle="light-content" backgroundColor="#434643" />
-      
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-      >
-        <ScrollView 
-          contentContainerStyle={estilos.scrollContainer}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Botão de voltar mantido no topo */}
-          <View style={estilos.headerTop}>
-            <TouchableOpacity style={estilos.backButton} onPress={() => router.back()}>
-              <Ionicons name="arrow-back" size={22} color="#FF98B9" />
-            </TouchableOpacity>
+    <LinearGradient colors={['#1E201E', '#434643', '#1A1C1A']} style={{ flex: 1 }}>
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="light-content" translucent />
+
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={20} color="#FF98B9" />
+        </TouchableOpacity>
+
+        <View style={styles.content}>
+          <View style={styles.iconBox}>
+            <Ionicons name="key-outline" size={48} color="#FF98B9" />
           </View>
 
-          {/* Bloco principal centralizado e expandido */}
-          <View style={estilos.formularioContainer}>
-            <Text style={estilos.tituloTopo}>Recuperar Senha</Text>
-            <Text style={estilos.subtituloTopo}>
-              Enviaremos um link seguro de redefinição para o seu e-mail cadastrado.
-            </Text>
+          <Text style={styles.titulo}>Recuperar Senha</Text>
+          <Text style={styles.subtitulo}>
+            Digite o e-mail cadastrado na sua conta para receber as instruções de redefinição.
+          </Text>
 
-            <View style={estilos.inputWrapper}>
-              <Text style={estilos.inputLabel}>E-mail</Text>
-              <TextInput 
-                style={estilos.input} 
-                placeholder="exemplo@email.com" 
-                placeholderTextColor="rgba(255, 255, 255, 0.4)"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                value={email}
-                onChangeText={setEmail}
-              />
-            </View>
-
-            <TouchableOpacity style={estilos.botaoEnviar} onPress={enviarInstrucoes} activeOpacity={0.8}>
-              <Text style={estilos.textoBotaoEnviar}>Enviar Instruções</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={estilos.voltarLogin} onPress={() => router.back()}>
-              <Text style={estilos.voltarLoginText}>Lembrou da senha? <Text style={estilos.voltarLoginTextBold}>Voltar ao login</Text></Text>
-            </TouchableOpacity>
+          <View style={styles.inputContainer}>
+            <Ionicons name="mail-outline" size={20} color="rgba(209, 209, 209, 0.7)" style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Digite o seu e-mail"
+              placeholderTextColor="rgba(209, 209, 209, 0.5)"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
           </View>
 
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+          <TouchableOpacity
+            style={[styles.botaoEnviar, carregando && styles.botaoDesativado]}
+            onPress={handleEnviarEmail}
+            disabled={carregando}
+          >
+            {carregando ? (
+              <ActivityIndicator color="#1E201E" />
+            ) : (
+              <Text style={styles.botaoTexto}>Enviar E-mail</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
-const estilos = StyleSheet.create({
-  tela: {
+const styles = StyleSheet.create({
+  container: {
     flex: 1,
-    backgroundColor: '#434643', 
-  },
-  scrollContainer: {
-    paddingHorizontal: 24,
-    paddingTop: 15,
-    paddingBottom: 30,
-  },
-  headerTop: {
-    alignItems: 'flex-start',
-    marginBottom: 10,
+    paddingHorizontal: 20
   },
   backButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: 'rgba(89, 89, 89, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 20,
     borderWidth: 1,
-    borderColor: 'rgba(107, 110, 107, 0.5)',
+    borderColor: 'rgba(255, 255, 255, 0.1)'
   },
-  formularioContainer: {
-    width: '100%',
-    backgroundColor: '#434643',
-    paddingVertical: 35,
-    paddingHorizontal: 24,
-    borderRadius: 24,
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 10
+  },
+  iconBox: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: 'rgba(89, 89, 89, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 6,
-    marginTop: 140,
+    borderColor: 'rgba(255, 152, 185, 0.3)'
   },
-  tituloTopo: {
-    fontSize: 28,
-    color: '#FF98B9',
+  titulo: {
+    fontSize: 24,
     fontWeight: 'bold',
-    letterSpacing: 0.5,
-    marginBottom: 8,
-    textAlign: 'center',
+    color: '#FF98B9',
+    marginBottom: 10
   },
-  subtituloTopo: {
+  subtitulo: {
     fontSize: 14,
     color: 'rgba(209, 209, 209, 0.8)',
-    lineHeight: 20,
     textAlign: 'center',
-    marginBottom: 25,
+    marginBottom: 30,
+    lineHeight: 20
   },
-  inputWrapper: {
-    marginBottom: 24,
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(89, 89, 89, 0.5)',
+    borderRadius: 14,
+    paddingHorizontal: 15,
+    height: 55,
+    width: '100%',
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)'
   },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FF98B9',
-    marginBottom: 8,
+  inputIcon: {
+    marginRight: 10
   },
   input: {
-    backgroundColor: 'rgba(67, 70, 67, 0.85)',
+    flex: 1,
     color: '#FFF',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 15,
-    borderWidth: 1,
-    borderColor: 'rgba(107, 110, 107, 0.6)',
+    fontSize: 15
   },
   botaoEnviar: {
     backgroundColor: '#FF98B9',
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginBottom: 24,
-    shadowColor: '#FF98B9',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 4,
+    height: 55,
+    borderRadius: 14,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center'
   },
-  textoBotaoEnviar: {
-    color: '#434643',
+  botaoDesativado: {
+    opacity: 0.6
+  },
+  botaoTexto: {
+    color: '#1E201E',
     fontSize: 16,
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
-  },
-  voltarLogin: {
-    alignItems: 'center',
-  },
-  voltarLoginText: {
-    fontSize: 14,
-    color: 'rgba(209, 209, 209, 0.85)',
-  },
-  voltarLoginTextBold: {
-    color: '#FF98B9',
-    fontWeight: '600',
-  },
+    fontWeight: 'bold'
+  }
 });

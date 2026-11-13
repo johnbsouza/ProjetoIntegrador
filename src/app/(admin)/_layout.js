@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Drawer } from 'expo-router/drawer';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import BotaoAcessibilidade from '../../components/BotaoAcessibilidade';
 
 export default function AdminLayout() {
   const router = useRouter();
@@ -21,14 +22,7 @@ export default function AdminLayout() {
           drawerActiveTintColor: '#434643',
           drawerActiveBackgroundColor: '#FF98B9',
           drawerInactiveTintColor: '#D1D1D1',
-          headerRight: () => (
-            <TouchableOpacity 
-              style={{ marginRight: 15, padding: 8, backgroundColor: 'rgba(255, 76, 76, 0.1)', borderRadius: 10, borderWidth: 1, borderColor: '#FF4C4C' }} 
-              onPress={() => router.replace('/')}
-            >
-              <Ionicons name="log-out-outline" size={20} color="#FF4C4C" />
-            </TouchableOpacity>
-          ),
+          headerRight: () => null,
         }}
       >
         <Drawer.Screen 
@@ -79,17 +73,33 @@ export default function AdminLayout() {
         <Drawer.Screen 
           name="lista-profissionais" 
           options={{ 
-            drawerLabel: 'Equipe & Comissões', 
+            drawerLabel: 'Equipe de Profissionais', 
             headerTitle: () => (
               <View style={{ alignItems: 'flex-start' }}>
-                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FF98B9' }}>Equipe e Comissões</Text>
+                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FF98B9' }}>Equipe de Profissionais</Text>
               </View>
             ),
             drawerIcon: ({ color, size }) => (
-              <Ionicons name="ribbon-outline" size={size} color={color} />
+              <Ionicons name="people-circle-outline" size={size} color={color} />
             ),
           }} 
         />
+
+        <Drawer.Screen 
+          name="relatorios" 
+          options={{ 
+            drawerLabel: 'Gestão de Comissões', 
+            headerTitle: () => (
+              <View style={{ alignItems: 'flex-start' }}>
+                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FF98B9' }}>Relatórios de Comissões</Text>
+              </View>
+            ),
+            drawerIcon: ({ color, size }) => (
+              <Ionicons name="cash-outline" size={size} color={color} />
+            ),
+          }} 
+        />
+
         <Drawer.Screen 
           name="gerenciar-usuarios" 
           options={{ 
@@ -150,6 +160,22 @@ export default function AdminLayout() {
           }} 
         />
 
+        {/* PERFIL DO ADMIN NO MENU LATERAL */}
+        <Drawer.Screen 
+          name="perfil" 
+          options={{ 
+            drawerLabel: 'Meu Perfil', 
+            headerTitle: () => (
+              <View style={{ alignItems: 'flex-start' }}>
+                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FF98B9' }}>Meu Perfil</Text>
+              </View>
+            ),
+            drawerIcon: ({ color, size }) => (
+              <Ionicons name="person-circle-outline" size={size} color={color} />
+            ),
+          }} 
+        />
+
         <Drawer.Screen 
           name="ajuda" 
           options={{ 
@@ -165,52 +191,19 @@ export default function AdminLayout() {
           }} 
         />
 
-        <Drawer.Screen name="novo-profissional" options={{ 
-          drawerItemStyle: { display: 'none' },
-          headerTitle: () => (
-            <View>
-              <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FF98B9' }}>Novo Profissional</Text>
-            </View>
-          ) 
-          }} />
-
-        <Drawer.Screen name="editar-profissional" options={{ 
-          drawerItemStyle: { display: 'none' },
-          headerTitle: () => (
-            <View>
-              <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FF98B9' }}>Editar Profissional</Text>
-            </View>
-          ) 
-          }} />
-
-        <Drawer.Screen name="novo-servico" options={{
-           drawerItemStyle: { display: 'none' }, 
-           headerTitle: () => (
-            <View>
-              <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FF98B9' }}>Novo Serviço</Text>
-            </View>
-          )
-           }} />
-
-        <Drawer.Screen name="relatorios" options={{ 
-          drawerItemStyle: { display: 'none' }, 
-          headerTitle: () => (
-            <View>
-              <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FF98B9' }}>Relatórios</Text>
-            </View>
-          )
-          }} />
-
-          <Drawer.Screen name="guia" options={{
-          drawerItemStyle: { display: 'none' },
-          headerTitle: () => (
-            <View style={{ alignItems: 'flex-start' }}>
-              <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FF98B9' }}>Guia da Plataforma</Text>
-            </View>
-  )
-}} />
-
+        {/* TELAS OCULTAS DO MENU LATERAL */}
+        <Drawer.Screen name="editar-perfil" options={{ drawerItemStyle: { display: 'none' }, headerTitle: 'Editar Perfil' }} />
+        <Drawer.Screen name="novo-profissional" options={{ drawerItemStyle: { display: 'none' }, headerTitle: 'Novo Profissional' }} />
+        <Drawer.Screen name="editar-profissional" options={{ drawerItemStyle: { display: 'none' }, headerTitle: 'Editar Profissional' }} />
+        <Drawer.Screen name="novo-servico" options={{ drawerItemStyle: { display: 'none' }, headerTitle: 'Novo Serviço' }} />
+        <Drawer.Screen name="guia" options={{ drawerItemStyle: { display: 'none' }, headerTitle: 'Guia da Plataforma' }} />
+        <Drawer.Screen name="equipe" options={{ drawerItemStyle: { display: 'none' } }} />
+        <Drawer.Screen name="estoque" options={{ drawerItemStyle: { display: 'none' } }} />
+        <Drawer.Screen name="despesas" options={{ drawerItemStyle: { display: 'none' } }} />
+        <Drawer.Screen name="profissionais" options={{ drawerItemStyle: { display: 'none' } }} />
       </Drawer>
+      
+      <BotaoAcessibilidade />
     </GestureHandlerRootView>
   );
 }

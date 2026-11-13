@@ -1,286 +1,168 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View, } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { db } from '../../config/firebase';
 
 export default function ClienteExplorarScreen() {
   const router = useRouter();
+  const [servicos, setServicos] = useState([]);
+  const [busca, setBusca] = useState('');
+  const [carregando, setCarregando] = useState(true);
 
-  const categorias = [
-    { id: '1', nome: 'Manicure', icon: 'color-wand-outline' },
-    { id: '2', nome: 'Spa', icon: 'leaf-outline' },
-    { id: '3', nome: 'Alongamento', icon: 'hand-left-outline' },
-  ];
+  useEffect(() => {
+    carregarServicos();
+  }, []);
 
-  const servicos = [
-    { id: '101', nome: 'Spa dos Pés', preco: 'R$ 60', tempo: '45 min', categoria: 'Spa', emAlta: true },
-    { id: '102', nome: 'Manicure Clássica', preco: 'R$ 45', tempo: '30 min', categoria: 'Manicure', emAlta: true },
-    { id: '103', nome: 'Alongamento em Gel', preco: 'R$ 150', tempo: '120 min', categoria: 'Alongamento', emAlta: false },
-    { id: '104', nome: 'Esmaltação em Gel', preco: 'R$ 80', tempo: '60 min', categoria: 'Manicure', emAlta: false },
-    { id: '105', nome: 'Spa Mãos e Pés', preco: 'R$ 110', tempo: '90 min', categoria: 'Spa', emAlta: false },
-  ];
+  async function carregarServicos() {
+    setCarregando(true);
+    try {
+      const q = query(collection(db, 'servicos'), where('ativo', '==', true));
+      const snap = await getDocs(q);
+      const lista = [];
+      snap.forEach((docSnap) => {
+        lista.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      setServicos(lista);
+    } catch (error) {
+      console.error('Erro ao carregar serviços:', error);
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  const servicosFiltrados = servicos.filter((item) => {
+    const termo = busca.toLowerCase();
+    const nome = item.nome ? item.nome.toLowerCase() : '';
+    const categoria = item.categoria ? item.categoria.toLowerCase() : '';
+    return nome.includes(termo) || categoria.includes(termo);
+  });
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#434643" />
-      
       {/* HEADER FIXO */}
       <View style={styles.headerRow}>
-        <TouchableOpacity 
-          style={styles.backButton} 
+        <TouchableOpacity
+          style={styles.backButton}
           onPress={() => router.back()}
-          activeOpacity={0.7}
         >
-          <Ionicons name="arrow-back" size={22} color="#FF98B9" />
+          <Ionicons name="arrow-back" size={24} color="#FFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Nossos Serviços</Text>
-        <View style={{ width: 42 }} /> {/* Espaçador para alinhar o título ao centro */}
+        <Text style={styles.headerTitle}>Explorar Serviços</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
-        {/* TEXTO DE INTRODUÇÃO */}
-        <Text style={styles.greeting}>O que deseja fazer hoje?</Text>
-        <Text style={styles.subtitle}>Escolha o tratamento ideal para o seu momento.</Text>
-
-        {/* CATEGORIAS */}
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false} 
-          contentContainerStyle={styles.categoriasContainer}
-        >
-          {categorias.map(cat => (
-            <TouchableOpacity key={cat.id} style={styles.categoriaCard} activeOpacity={0.8}>
-              <View style={styles.categoriaIconBox}>
-                <Ionicons name={cat.icon} size={20} color="#434643" />
-              </View>
-              <Text style={styles.categoriaNome}>{cat.nome}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Serviços em Alta</Text>
-          <Ionicons name="flame" size={18} color="#FF98B9" />
-        </View>
-
-        {servicos.filter(s => s.emAlta).map(servico => (
-          <TouchableOpacity 
-            key={servico.id} 
-            style={styles.servicoCard}
-            onPress={() => router.push('/(cliente)/agenda')}
-            activeOpacity={0.8}
-          >
-            <View style={styles.servicoInfo}>
-              <Text style={styles.servicoCategoria}>{servico.categoria}</Text>
-              <Text style={styles.servicoNome}>{servico.nome}</Text>
-              <View style={styles.servicoDetalhesRow}>
-                <Ionicons name="time-outline" size={14} color="#D1D1D1" />
-                <Text style={styles.servicoDetalhesText}>{servico.tempo}</Text>
-              </View>
-            </View>
-            
-            <View style={styles.servicoRight}>
-              <Text style={styles.servicoPreco}>{servico.preco}</Text>
-              <View style={styles.agendarBtn}>
-                <Text style={styles.agendarBtnText}>Agendar</Text>
-              </View>
-            </View>
+      {/* BARRA DE PESQUISA */}
+      <View style={styles.searchContainer}>
+        <Ionicons name="search-outline" size={20} color="#D1D1D1" style={{ marginRight: 8 }} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Buscar serviço ou categoria..."
+          placeholderTextColor="rgba(209, 209, 209, 0.5)"
+          value={busca}
+          onChangeText={setBusca}
+        />
+        {busca.length > 0 ? (
+          <TouchableOpacity onPress={() => setBusca('')}>
+            <Ionicons name="close-circle" size={18} color="#D1D1D1" />
           </TouchableOpacity>
-        ))}
+        ) : null}
+      </View>
 
-        {/* LISTA DE TODOS OS SERVIÇOS */}
-        <Text style={[styles.sectionTitle, { marginTop: 10, marginBottom: 15 }]}>Todos os Serviços</Text>
-
-        {servicos.filter(s => !s.emAlta).map(servico => (
-          <TouchableOpacity 
-            key={servico.id} 
-            style={styles.servicoCard}
-            onPress={() => router.push('/(cliente)/agenda')}
-            activeOpacity={0.8}
-          >
-            <View style={styles.servicoInfo}>
-              <Text style={styles.servicoCategoria}>{servico.categoria}</Text>
-              <Text style={styles.servicoNome}>{servico.nome}</Text>
-              <View style={styles.servicoDetalhesRow}>
-                <Ionicons name="time-outline" size={14} color="#D1D1D1" />
-                <Text style={styles.servicoDetalhesText}>{servico.tempo}</Text>
+      {/* LISTA DE SERVIÇOS */}
+      {carregando ? (
+        <ActivityIndicator color="#FF98B9" style={{ marginTop: 40 }} />
+      ) : (
+        <FlatList
+          data={servicosFiltrados}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ padding: 20 }}
+          ListEmptyComponent={
+            <Text style={styles.textoVazio}>Nenhum serviço encontrado.</Text>
+          }
+          renderItem={({ item }) => (
+            <View style={styles.cardServico}>
+              <View style={styles.infoBox}>
+                <Text style={styles.categoriaBadge}>{item.categoria || 'Geral'}</Text>
+                <Text style={styles.nomeServico}>{item.nome}</Text>
+                {Boolean(item.descricao) && (
+                  <Text style={styles.descricaoServico}>{item.descricao}</Text>
+                )}
+                <Text style={styles.precoServico}>
+                  R$ {parseFloat(item.preco || 0).toFixed(2)} • {item.duracaoMinutos || 45} min
+                </Text>
               </View>
-            </View>
-            
-            <View style={styles.servicoRight}>
-              <Text style={styles.servicoPreco}>{servico.preco}</Text>
-              <View style={styles.agendarBtnSecondary}>
-                <Text style={styles.agendarBtnTextSecondary}>Agendar</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        ))}
 
-      </ScrollView>
+              <TouchableOpacity
+                style={styles.btnAgendar}
+                onPress={() =>
+                  router.push({
+                    pathname: '/(cliente)/agendar',
+                    params: {
+                      servicoId: item.id,
+                      nomeServico: item.nome,
+                      preco: item.preco,
+                    },
+                  })
+                }
+              >
+                <Text style={styles.btnAgendarTexto}>Agendar</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        />
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#434643' 
-  },
-  headerRow: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    paddingHorizontal: 24,
-    paddingTop: 15,
-    paddingBottom: 10,
-  },
-  backButton: { 
-    width: 42, 
-    height: 42, 
-    borderRadius: 21, 
-    backgroundColor: 'rgba(89, 89, 89, 0.45)', 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    borderWidth: 1, 
-    borderColor: 'rgba(107, 110, 107, 0.5)' 
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    letterSpacing: 0.5,
-  },
-  scrollContent: { 
-    paddingHorizontal: 24, 
-    paddingBottom: 40,
-  },
-  greeting: { 
-    fontSize: 28, 
-    fontWeight: 'bold', 
-    color: '#FF98B9', 
-    letterSpacing: 0.5,
-    marginTop: 15,
-  },
-  subtitle: { 
-    fontSize: 14, 
-    color: 'rgba(209, 209, 209, 0.8)', 
-    marginTop: 6,
-    marginBottom: 25,
-    lineHeight: 20,
-  },
-  categoriasContainer: {
-    paddingBottom: 30,
-    gap: 12,
-  },
-  categoriaCard: {
+  container: { flex: 1, backgroundColor: '#434643' },
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(89, 89, 89, 0.45)',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: '#595959',
   },
-  categoriaIconBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#FF98B9',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  categoriaNome: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  sectionHeader: {
+  backButton: { marginRight: 15 },
+  headerTitle: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
+  searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
-    gap: 8,
-  },
-  sectionTitle: { 
-    fontSize: 18, 
-    fontWeight: 'bold', 
-    color: '#FFFFFF', 
-    letterSpacing: 0.5
-  },
-  servicoCard: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(89, 89, 89, 0.45)', 
-    padding: 18, 
-    borderRadius: 20, 
-    borderWidth: 1, 
-    borderColor: 'rgba(255, 255, 255, 0.12)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-    marginBottom: 14,
-  },
-  servicoInfo: {
-    flex: 1,
-  },
-  servicoCategoria: {
-    fontSize: 11,
-    color: 'rgba(209, 209, 209, 0.6)',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  servicoNome: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 8,
-  },
-  servicoDetalhesRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  servicoDetalhesText: {
-    fontSize: 13,
-    color: '#D1D1D1',
-  },
-  servicoRight: {
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-  },
-  servicoPreco: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FF98B9',
-  },
-  agendarBtn: {
-    backgroundColor: '#FF98B9',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    backgroundColor: '#595959',
+    margin: 20,
+    marginBottom: 10,
+    paddingHorizontal: 15,
+    height: 48,
     borderRadius: 12,
-  },
-  agendarBtnText: {
-    color: '#434643',
-    fontSize: 13,
-    fontWeight: 'bold',
-  },
-  agendarBtnSecondary: {
-    backgroundColor: 'rgba(89, 89, 89, 0.8)',
     borderWidth: 1,
-    borderColor: '#FF98B9',
-    paddingVertical: 8,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  searchInput: { flex: 1, color: '#FFF', fontSize: 14 },
+  textoVazio: { color: '#D1D1D1', textAlign: 'center', marginTop: 40, fontSize: 14 },
+  cardServico: {
+    backgroundColor: '#595959',
+    padding: 16,
+    borderRadius: 14,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  infoBox: { flex: 1, marginRight: 10 },
+  categoriaBadge: { color: '#FF98B9', fontSize: 11, fontWeight: 'bold', textTransform: 'uppercase' },
+  nomeServico: { color: '#FFF', fontSize: 16, fontWeight: 'bold', marginTop: 2 },
+  descricaoServico: { color: '#D1D1D1', fontSize: 12, marginTop: 4 },
+  precoServico: { color: '#FFF', fontSize: 14, fontWeight: 'bold', marginTop: 8 },
+  btnAgendar: {
+    backgroundColor: '#FF98B9',
     paddingHorizontal: 16,
-    borderRadius: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
   },
-  agendarBtnTextSecondary: {
-    color: '#FF98B9',
-    fontSize: 13,
-    fontWeight: 'bold',
-  },
+  btnAgendarTexto: { color: '#1E201E', fontWeight: 'bold', fontSize: 13 },
 });
