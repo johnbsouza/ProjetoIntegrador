@@ -1,12 +1,24 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { Drawer } from 'expo-router/drawer';
 import { Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import BotaoAcessibilidade from '../../components/BotaoAcessibilidade';
 
 export default function AdminLayout() {
-  const router = useRouter();
+
+  async function Sair() {
+  try {
+    await signOut(auth);
+
+  } catch (error) {
+    console.error('Erro ao fazer logout:', error);
+
+    Alert.alert(
+      'Erro',
+      'Não foi possível sair do aplicativo.'
+    );
+  }
+}
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
