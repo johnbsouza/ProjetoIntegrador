@@ -52,8 +52,6 @@ export default function PerfilClienteScreen() {
             await signOut(auth);
           } catch (error) {
             console.error('Erro ao encerrar sessão:', error);
-          } finally {
-            router.replace('/');
           }
         },
       },

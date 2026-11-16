@@ -32,8 +32,6 @@ function CustomDrawerProfissional(props) {
             await signOut(auth);
           } catch (error) {
             console.error('Erro ao sair:', error);
-          } finally {
-            router.replace('/');
           }
         },
       },

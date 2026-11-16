@@ -106,7 +106,7 @@ export default function AdminDashboard() {
 
             <TouchableOpacity 
               style={styles.btnAtalho}
-              onPress={() => router.push('/(admin)/novo-servico')}
+              onPress={() => router.push('/(admin)/servicos')}
             >
               <Ionicons name="add-circle-outline" size={22} color="#FF98B9" />
               <Text style={styles.btnAtalhoTexto}>Cadastrar Novo Serviço</Text>

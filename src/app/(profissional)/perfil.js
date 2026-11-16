@@ -44,16 +44,12 @@ export default function PerfilProfissionalScreen() {
   function handleLogout() {
     Alert.alert('Sair da Conta', 'Tem certeza de que deseja encerrar a sua sessão?', [
       { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Sair',
-        style: 'destructive',
+      {text: 'Sair',style: 'destructive',
         onPress: async () => {
           try {
             await signOut(auth);
           } catch (error) {
             console.error('Erro ao encerrar sessão:', error);
-          } finally {
-            router.replace('/');
           }
         },
       },

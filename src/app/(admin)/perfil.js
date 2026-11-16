@@ -44,17 +44,14 @@ export default function PerfilAdminScreen() {
   function handleLogout() {
     Alert.alert('Sair da Conta', 'Tem certeza de que deseja encerrar a sua sessão?', [
       { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Sair',
-        style: 'destructive',
+      { text: 'Sair', style: 'destructive',
         onPress: async () => {
           try {
             await signOut(auth);
           } catch (error) {
+            Alert.alert('Erro', 'Não foi possível realizar o logout');
             console.error('Erro ao encerrar sessão:', error);
-          } finally {
-            router.replace('/');
-          }
+          } 
         },
       },
     ]);

@@ -36,10 +36,7 @@ function CustomDrawerCliente(props) {
             await signOut(auth);
           } catch (error) {
             console.error('Erro ao encerrar sessão:', error);
-          } finally {
-            // 3. Redireciona obrigatoriamente para a tela de login inicial
-            router.replace('/');
-          }
+          } 
         },
       },
     ]);

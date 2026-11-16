@@ -1,4 +1,4 @@
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Redirect, Stack, useRouter, useSegments } from 'expo-router';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
@@ -56,22 +56,15 @@ export default function RootLayout() {
 
   // Controla o redirecionamento
   useEffect(() => {
-    if (carregando) return;
+    if (carregando || !usuarioLogado) return;
 
     const rotaAtual = segments[0];
-
-    if (!usuarioLogado) {
-       if (rotaAtual !== 'index') {
-        router.replace('/');
-      }
-      return;
-    }
 
     if (grupoAcesso && rotaAtual !== grupoAcesso) {
       router.replace('/' + grupoAcesso);
     }
 
-  }, [carregando, usuarioLogado, grupoAcesso, segments]);
+  }, [carregando, usuarioLogado, grupoAcesso, segments, router]);
 
   // Tela de carregamento
   if (carregando) {
@@ -85,6 +78,10 @@ export default function RootLayout() {
         <ActivityIndicator size="large" color="#FF98B9" />
       </View>
     );
+  }
+
+  if (!usuarioLogado && ['(admin)', '(profissional)', '(cliente)'].includes(segments[0])) {
+    return <Redirect href="/" />;
   }
 
   return (
