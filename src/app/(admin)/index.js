@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 import {
   collection,
   onSnapshot,
@@ -25,7 +25,8 @@ const COLORS = {
   bgSurface: '#595959',
   bgElevated: '#383B38',
   bgDark: '#2B2D2B',
-  borderSubtle: 'rgba(255,255,255,0.08)',
+  borderSubtle: '#6B6E6B',
+  borderSoft: 'rgba(255,255,255,0.08)',
   accent: '#FF98B9',
   accentSoft: 'rgba(255, 152, 185, 0.14)',
   accentBorder: 'rgba(255, 152, 185, 0.35)',
@@ -35,7 +36,6 @@ const COLORS = {
   textOnAccent: '#1E201E',
   success: '#A5D6A7',
   info: '#90CAF9',
-  warning: '#FFD54F',
 };
 
 const DIAS_SEMANA = [
@@ -74,6 +74,7 @@ function normalizarStatus(status) {
 
 export default function AdminDashboardScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const usuarioAtual = auth.currentUser;
   const infoHoje = useMemo(() => obterInfoHoje(), []);
 
@@ -139,7 +140,6 @@ export default function AdminDashboardScreen() {
   }, []);
 
   const metricas = useMemo(() => {
-    // 1. Faturamento: soma do preço dos agendamentos não cancelados (confirmados + concluídos)
     const agendamentosValidos = agendamentos.filter(
       (item) => normalizarStatus(item.status) !== 'cancelado'
     );
@@ -153,23 +153,28 @@ export default function AdminDashboardScreen() {
       .filter((item) => normalizarStatus(item.status) === 'concluido')
       .reduce((soma, item) => soma + (Number(item.preco) || 0), 0);
 
-    // 2. Agendamentos Hoje: filtra pela data atual (YYYY-MM-DD)
     const agendamentosHojeLista = agendamentos.filter((item) => {
       const dataDoc = item.data || item.dataAgendamento || '';
       return dataDoc === infoHoje.iso && normalizarStatus(item.status) !== 'cancelado';
     });
 
-    // 3. Clientes Ativos: clientes cadastrados que não estejam explicitamente marcados como inativos
     const clientesAtivosLista = clientes.filter((c) => c.ativo !== false);
 
     return {
       faturamentoTotal,
       faturamentoConcluido,
       agendamentosHojeCount: agendamentosHojeLista.length,
-      agendamentosHojeLista,
       clientesAtivosCount: clientesAtivosLista.length,
     };
   }, [agendamentos, clientes, infoHoje.iso]);
+
+  function abrirMenuLateral() {
+    if (typeof navigation.openDrawer === 'function') {
+      navigation.openDrawer();
+    } else if (typeof navigation.dispatch === 'function') {
+      navigation.dispatch({ type: 'OPEN_DRAWER' });
+    }
+  }
 
   function handleRefresh() {
     setAtualizando(true);
@@ -181,9 +186,19 @@ export default function AdminDashboardScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.topBar}>
-        <View>
-          <Text style={styles.topSubtitulo}>Painel Administrativo</Text>
-          <Text style={styles.topTitle}>Lirium Esmalteria & Spa</Text>
+        <View style={styles.topEsquerda}>
+          <TouchableOpacity
+            onPress={abrirMenuLateral}
+            style={styles.menuButton}
+            accessibilityLabel="Abrir menu"
+          >
+            <Ionicons name="menu" size={26} color={COLORS.textPrimary} />
+          </TouchableOpacity>
+
+          <View>
+            <Text style={styles.topSubtitulo}>Painel Administrativo</Text>
+            <Text style={styles.topTitle}>Lirium Esmalteria & Spa</Text>
+          </View>
         </View>
 
         <TouchableOpacity
@@ -217,11 +232,10 @@ export default function AdminDashboardScreen() {
         {carregando ? (
           <View style={styles.loadingBox}>
             <ActivityIndicator size="large" color={COLORS.accent} />
-            <Text style={styles.loadingTexto}>Calculando indicadores do salão...</Text>
+            <Text style={styles.loadingTexto}>A calcular indicadores do salão...</Text>
           </View>
         ) : (
           <>
-            {/* Card 1: Faturamento */}
             <View style={styles.cardDestaque}>
               <View style={styles.cardHeader}>
                 <View style={styles.iconeBox}>
@@ -238,7 +252,6 @@ export default function AdminDashboardScreen() {
               </Text>
             </View>
 
-            {/* Cards 2 e 3: Agendamentos Hoje e Clientes Ativos */}
             <View style={styles.gridDois}>
               <View style={styles.cardMetrica}>
                 <View style={styles.cardHeader}>
@@ -269,12 +282,11 @@ export default function AdminDashboardScreen() {
               </View>
             </View>
 
-            {/* Atalhos rápidos da área Admin */}
             <Text style={styles.secaoTitulo}>Gerenciamento Rápido</Text>
 
             <TouchableOpacity
               style={styles.atalhoCard}
-              onPress={() => router.push('./usuarios')}
+              onPress={() => router.push('./gerenciar-usuarios')}
             >
               <View style={styles.atalhoEsquerda}>
                 <Ionicons name="people-circle-outline" size={22} color={COLORS.accent} />
@@ -290,14 +302,14 @@ export default function AdminDashboardScreen() {
 
             <TouchableOpacity
               style={styles.atalhoCard}
-              onPress={() => router.push('./servicos')}
+              onPress={() => router.push('./catalogo-equipe')}
             >
               <View style={styles.atalhoEsquerda}>
                 <Ionicons name="sparkles-outline" size={22} color={COLORS.accent} />
                 <View>
-                  <Text style={styles.atalhoTitulo}>Catálogo de Serviços</Text>
+                  <Text style={styles.atalhoTitulo}>Catálogo e Equipe</Text>
                   <Text style={styles.atalhoSub}>
-                    Preços, serviços e disponibilidade
+                    Serviços, preços e profissionais do salão
                   </Text>
                 </View>
               </View>
@@ -325,12 +337,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 14,
     backgroundColor: COLORS.bgSurface,
     borderBottomWidth: 1,
-    borderBottomColor: '#6B6E6B',
+    borderBottomColor: COLORS.borderSubtle,
+  },
+  topEsquerda: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  menuButton: {
+    padding: 4,
   },
   topSubtitulo: {
     fontSize: 12,
@@ -357,7 +378,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: COLORS.borderSubtle,
+    borderColor: COLORS.borderSoft,
     marginBottom: 16,
   },
   dataBannerTexto: {
@@ -423,7 +444,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
-    borderColor: COLORS.borderSubtle,
+    borderColor: COLORS.borderSoft,
   },
   iconeBoxMenor: {
     width: 32,
@@ -462,7 +483,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: COLORS.borderSubtle,
+    borderColor: COLORS.borderSoft,
     marginBottom: 10,
   },
   atalhoEsquerda: {
