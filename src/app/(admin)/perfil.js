@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth, db } from '../../config/firebase';
 
 export default function PerfilAdminScreen() {
-  const router = useRouter();
+  const router = useRouter(); // Instanciado corretamente aqui no topo do componente
   const [usuario, setUsuario] = useState(null);
   const [carregando, setCarregando] = useState(true);
 
@@ -41,20 +41,29 @@ export default function PerfilAdminScreen() {
     }
   }
 
+  // Função de Sair da Conta totalmente integrada
   function handleLogout() {
-    Alert.alert('Sair da Conta', 'Tem certeza de que deseja encerrar a sua sessão?', [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Sair', style: 'destructive',
-        onPress: async () => {
-          try {
-            await signOut(auth);
-          } catch (error) {
-            Alert.alert('Erro', 'Não foi possível realizar o logout');
-            console.error('Erro ao encerrar sessão:', error);
-          } 
+    Alert.alert(
+      'Sair da Conta',
+      'Tem certeza de que deseja encerrar a sua sessão?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Sair',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await signOut(auth);
+              // Força o redirecionamento imediato para a tela de login na raiz
+              router.replace('/');
+            } catch (error) {
+              console.error('Erro ao encerrar sessão:', error);
+              Alert.alert('Erro', 'Não foi possível encerrar a sessão.');
+            }
+          },
         },
-      },
-    ]);
+      ]
+    );
   }
 
   const inicial = usuario?.nome ? usuario.nome.charAt(0).toUpperCase() : 'A';
@@ -89,6 +98,7 @@ export default function PerfilAdminScreen() {
               <Ionicons name="chevron-forward" size={20} color="#D1D1D1" />
             </TouchableOpacity>
 
+            {/* BOTÃO DE LOGOUT LIGADO DIRETAMENTE À FUNÇÃO */}
             <TouchableOpacity 
               style={styles.logoutButton}
               onPress={handleLogout}

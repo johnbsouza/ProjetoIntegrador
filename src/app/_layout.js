@@ -4,16 +4,18 @@ import { doc, getDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { auth, db } from '../config/firebase';
+import { AcessibilidadeProvider, useAcessibilidade, } from '../context/AcessibilidadeContext';
 
-export default function RootLayout() {
+function ConteudoRaizApp() {
   const router = useRouter();
   const segments = useSegments();
+  const { tema } = useAcessibilidade();
 
   const [carregando, setCarregando] = useState(true);
   const [usuarioLogado, setUsuarioLogado] = useState(false);
   const [grupoAcesso, setGrupoAcesso] = useState(null);
 
-  // Verifica a autenticação do usuário
+  // Verifica a autenticação do usuário e seu nível de acesso no Firestore
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -21,14 +23,14 @@ export default function RootLayout() {
           const userDoc = await getDoc(doc(db, 'usuarios', user.uid));
 
           let nivelAcesso = 'cliente';
-
           if (userDoc.exists()) {
-            nivelAcesso = userDoc.data().nivelAcesso || 'cliente';
+            nivelAcesso = String(userDoc.data()?.nivelAcesso || 'cliente')
+              .trim()
+              .toLowerCase();
           }
 
           let grupo = '(cliente)';
-
-          if (nivelAcesso === 'admin') {
+          if (nivelAcesso === 'admin' || nivelAcesso === 'administrador') {
             grupo = '(admin)';
           } else if (nivelAcesso === 'profissional') {
             grupo = '(profissional)';
@@ -36,13 +38,11 @@ export default function RootLayout() {
 
           setGrupoAcesso(grupo);
           setUsuarioLogado(true);
-
         } catch (error) {
           console.error('Erro ao verificar usuário:', error);
           setGrupoAcesso('(cliente)');
           setUsuarioLogado(true);
         }
-
       } else {
         setUsuarioLogado(false);
         setGrupoAcesso(null);
@@ -54,7 +54,7 @@ export default function RootLayout() {
     return unsubscribe;
   }, []);
 
-  // Controla o redirecionamento
+  // Controla o redirecionamento conforme estado de autenticação e grupo de acesso
   useEffect(() => {
     if (carregando || !usuarioLogado) return;
 
@@ -63,19 +63,20 @@ export default function RootLayout() {
     if (grupoAcesso && rotaAtual !== grupoAcesso) {
       router.replace('/' + grupoAcesso);
     }
-
   }, [carregando, usuarioLogado, grupoAcesso, segments, router]);
 
   // Tela de carregamento
   if (carregando) {
     return (
-      <View style={{
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#1E201E'
-      }}>
-        <ActivityIndicator size="large" color="#FF98B9" />
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: tema?.bgDark || '#1E201E',
+        }}
+      >
+        <ActivityIndicator size="large" color={tema?.accent || '#FF98B9'} />
       </View>
     );
   }
@@ -88,6 +89,18 @@ export default function RootLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="cadastro" />
+      <Stack.Screen name="esqueci-senha" />
+      <Stack.Screen name="(admin)" />
+      <Stack.Screen name="(cliente)" />
+      <Stack.Screen name="(profissional)" />
     </Stack>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <AcessibilidadeProvider>
+      <ConteudoRaizApp />
+    </AcessibilidadeProvider>
   );
 }

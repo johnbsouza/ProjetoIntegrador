@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { onAuthStateChanged, signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Image, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, } from 'react-native';
+import { ActivityIndicator, Alert, Image, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BotaoAcessibilidade from '../components/BotaoAcessibilidade';
 import { auth, db } from '../config/firebase';
@@ -155,8 +155,6 @@ export default function LoginTela() {
             </TouchableOpacity>
           </View>
         </View>
-
-        
       </View>
 
       <BotaoAcessibilidade />
@@ -281,20 +279,5 @@ const styles = StyleSheet.create({
     color: '#FF98B9',
     fontSize: 13,
     fontWeight: 'bold',
-  },
-  footerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 35,
-  },
-  footerLinkText: {
-    color: 'rgba(255, 255, 255, 0.5)',
-    fontSize: 13,
-  },
-  footerDot: {
-    color: 'rgba(255, 255, 255, 0.3)',
-    marginHorizontal: 12,
-    fontSize: 14,
   },
 });

@@ -1,208 +1,208 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Drawer } from 'expo-router/drawer';
-import { Text, View } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import BotaoAcessibilidade from '../../components/BotaoAcessibilidade';
+import { signOut } from 'firebase/auth';
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { auth } from '../../config/firebase';
 
-export default function AdminLayout() {
+const COLORS = {
+  drawerBg: '#434643',
+  drawerHeaderBg: '#595959',
+  borderSubtle: '#6B6E6B',
+  accent: '#FF98B9',
+  textPrimary: '#FFFFFF',
+  textSecondary: '#D1D1D1',
+  textMuted: '#A0A3A0',
+  textOnAccent: '#1E201E',
+  danger: '#FF7B7B',
+};
+
+const MENU_PRINCIPAL_ADMIN = [
+  { name: 'index', label: 'Dashboard', icon: 'pie-chart-outline' },
+  { name: 'catalogo-equipe', label: 'Catálogo e Equipe', icon: 'sparkles-outline' },
+  { name: 'clientes', label: 'Contatos de Clientes', icon: 'people-outline' },
+  { name: 'profissionais', label: 'Equipe de Profissionais', icon: 'people-circle-outline' },
+  { name: 'gerenciar-usuarios', label: 'Controle de Acessos', icon: 'shield-checkmark-outline' },
+  { name: 'servicos', label: 'Catálogo de Serviços', icon: 'list-outline' },
+  { name: 'pacotes', label: 'Pacotes de Serviços', icon: 'gift-outline' },
+  { name: 'caixa', label: 'Caixa & Estoque', icon: 'wallet-outline' },
+  { name: 'perfil', label: 'Meu Perfil', icon: 'person-circle-outline' },
+  { name: 'ajuda', label: 'Ajuda & Suporte', icon: 'help-circle-outline' },
+];
+
+const ROTAS_SECUNDARIAS_ADMIN = [
+  'despesas',
+  'editar-perfil',
+  'editar-profissional',
+  'equipe',
+  'estoque',
+  'guia',
+  'lista-profissionais',
+  'novo-profissional',
+  'relatorios',
+];
+
+function CustomAdminDrawerContent(props) {
   const router = useRouter();
+  const { state, navigation } = props;
+  const rotaAtual = state?.routes?.[state.index]?.name;
+
+  async function handleLogout() {
+    try {
+      await signOut(auth);
+      router.replace('/login');
+    } catch (error) {
+      console.error('Erro ao encerrar sessão:', error);
+      Alert.alert('Erro', 'Não foi possível encerrar a sessão.');
+    }
+  }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <Drawer
-        screenOptions={{
-          headerStyle: { backgroundColor: '#434643', shadowColor: 'transparent', elevation: 0 },
-          headerTintColor: '#FF98B9', 
-          headerTitleAlign: 'center',
-          headerTitleContainerStyle: {
-            alignItems: 'center',
-          },
-          drawerStyle: { backgroundColor: '#595959', width: 280 },
-          drawerActiveTintColor: '#434643',
-          drawerActiveBackgroundColor: '#FF98B9',
-          drawerInactiveTintColor: '#D1D1D1',
-          headerRight: () => null,
-        }}
+    <View style={styles.drawerContainer}>
+      <View style={styles.drawerHeader}>
+        <Text style={styles.brandTitle}>Lirium Esmalteria & Spa</Text>
+        <Text style={styles.brandSub}>Painel Administrativo</Text>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        <Drawer.Screen 
-          name="index" 
-          options={{ 
-            drawerLabel: 'Dashboard', 
-            headerTitle: () => (
-              <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FF98B9' }}>Painel Administrador</Text>
-              </View>
-            ),
-            drawerIcon: ({ color, size }) => (
-              <Ionicons name="pie-chart-outline" size={size} color={color} />
-            ),
-          }} 
-        />
+        {MENU_PRINCIPAL_ADMIN.map((item) => {
+          const ativa = rotaAtual === item.name;
+          return (
+            <TouchableOpacity
+              key={item.name}
+              style={[styles.itemBtn, ativa && styles.itemBtnAtivo]}
+              onPress={() => {
+                navigation.navigate(item.name);
+                if (typeof navigation.closeDrawer === 'function') {
+                  navigation.closeDrawer();
+                }
+              }}
+            >
+              <Ionicons
+                name={item.icon}
+                size={20}
+                color={ativa ? COLORS.textOnAccent : COLORS.textSecondary}
+              />
+              <Text style={[styles.itemTexto, ativa && styles.itemTextoAtivo]}>
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
 
-        <Drawer.Screen 
-          name="agenda" 
-          options={{ 
-            drawerLabel: 'Agenda', 
-            headerTitle: () => (
-              <View style={{ alignItems: 'flex-start' }}>
-                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FF98B9' }}>Agenda da Esmalteria</Text>
-              </View>
-            ),
-            drawerIcon: ({ color, size }) => (
-              <Ionicons name="calendar-outline" size={size} color={color} />
-            ),
-          }} 
-        />
-
-        <Drawer.Screen 
-          name="clientes" 
-          options={{ 
-            drawerLabel: 'Contatos de Clientes', 
-            headerTitle: () => (
-              <View style={{ alignItems: 'flex-start' }}>
-                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FF98B9' }}>Contatos de Clientes</Text>
-              </View>
-            ),
-            drawerIcon: ({ color, size }) => (
-              <Ionicons name="people-outline" size={size} color={color} />
-            ),
-          }} 
-        />
-
-        <Drawer.Screen 
-          name="lista-profissionais" 
-          options={{ 
-            drawerLabel: 'Equipe de Profissionais', 
-            headerTitle: () => (
-              <View style={{ alignItems: 'flex-start' }}>
-                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FF98B9' }}>Equipe de Profissionais</Text>
-              </View>
-            ),
-            drawerIcon: ({ color, size }) => (
-              <Ionicons name="people-circle-outline" size={size} color={color} />
-            ),
-          }} 
-        />
-
-        <Drawer.Screen 
-          name="relatorios" 
-          options={{ 
-            drawerLabel: 'Gestão de Comissões', 
-            headerTitle: () => (
-              <View style={{ alignItems: 'flex-start' }}>
-                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FF98B9' }}>Relatórios de Comissões</Text>
-              </View>
-            ),
-            drawerIcon: ({ color, size }) => (
-              <Ionicons name="cash-outline" size={size} color={color} />
-            ),
-          }} 
-        />
-
-        <Drawer.Screen 
-          name="gerenciar-usuarios" 
-          options={{ 
-            drawerLabel: 'Controle de Acessos', 
-            headerTitle: () => (
-              <View style={{ alignItems: 'flex-start' }}>
-                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FF98B9' }}>Controle de Acessos</Text>
-              </View>
-            ),
-            drawerIcon: ({ color, size }) => (
-              <Ionicons name="shield-checkmark-outline" size={size} color={color} />
-            ),
-          }} 
-        />
-
-        <Drawer.Screen 
-          name="servicos" 
-          options={{ 
-            drawerLabel: 'Catálogo de Serviços', 
-            headerTitle: () => (
-              <View style={{ alignItems: 'flex-start' }}>
-                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FF98B9' }}>Catálogo de Serviços</Text>
-              </View>
-            ),
-            drawerIcon: ({ color, size }) => (
-              <Ionicons name="list-outline" size={size} color={color} />
-            ),
-          }} 
-        />
-
-        <Drawer.Screen 
-          name="pacotes" 
-          options={{ 
-            drawerLabel: 'Pacotes de Serviços', 
-            headerTitle: () => (
-              <View style={{ alignItems: 'flex-start' }}>
-                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FF98B9' }}>Pacotes de Serviços</Text>
-              </View>
-            ),
-            drawerIcon: ({ color, size }) => (
-              <Ionicons name="gift-outline" size={size} color={color} />
-            ),
-          }} 
-        />
-
-        <Drawer.Screen 
-          name="caixa" 
-          options={{ 
-            drawerLabel: 'Caixa & Estoque', 
-            headerTitle: () => (
-              <View style={{ alignItems: 'flex-start' }}>
-                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FF98B9' }}>Caixa e Estoque</Text>
-              </View>
-            ),
-            drawerIcon: ({ color, size }) => (
-              <Ionicons name="wallet-outline" size={size} color={color} />
-            ),
-          }} 
-        />
-
-        <Drawer.Screen 
-          name="perfil" 
-          options={{ 
-            drawerLabel: 'Meu Perfil', 
-            headerTitle: () => (
-              <View style={{ alignItems: 'flex-start' }}>
-                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FF98B9' }}>Meu Perfil</Text>
-              </View>
-            ),
-            drawerIcon: ({ color, size }) => (
-              <Ionicons name="person-circle-outline" size={size} color={color} />
-            ),
-          }} 
-        />
-
-        <Drawer.Screen 
-          name="ajuda" 
-          options={{ 
-            drawerLabel: 'Ajuda & Suporte', 
-            headerTitle: () => (
-              <View style={{ alignItems: 'flex-start' }}>
-                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FF98B9' }}>Ajuda & Suporte</Text>
-              </View>
-            ),
-            drawerIcon: ({ color, size }) => (
-              <Ionicons name="help-circle-outline" size={size} color={color} />
-            ),
-          }} 
-        />
-
-        {/* TELAS OCULTAS DO MENU LATERAL */}
-        <Drawer.Screen name="editar-perfil" options={{ drawerItemStyle: { display: 'none' }, headerTitle: 'Editar Perfil' }} />
-        <Drawer.Screen name="novo-profissional" options={{ drawerItemStyle: { display: 'none' }, headerTitle: 'Novo Profissional' }} />
-        <Drawer.Screen name="editar-profissional" options={{ drawerItemStyle: { display: 'none' }, headerTitle: 'Editar Profissional' }} />
-        <Drawer.Screen name="novo-servico" options={{ drawerItemStyle: { display: 'none' }, headerTitle: 'Novo Serviço' }} />
-        <Drawer.Screen name="guia" options={{ drawerItemStyle: { display: 'none' }, headerTitle: 'Guia da Plataforma' }} />
-        <Drawer.Screen name="equipe" options={{ drawerItemStyle: { display: 'none' } }} />
-        <Drawer.Screen name="estoque" options={{ drawerItemStyle: { display: 'none' } }} />
-        <Drawer.Screen name="despesas" options={{ drawerItemStyle: { display: 'none' } }} />
-        <Drawer.Screen name="profissionais" options={{ drawerItemStyle: { display: 'none' } }} />
-      </Drawer>
-      
-      <BotaoAcessibilidade />
-    </GestureHandlerRootView>
+      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+        <Ionicons name="log-out-outline" size={20} color={COLORS.danger} />
+        <Text style={styles.logoutTexto}>Sair da conta</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
+
+export default function AdminLayout() {
+  return (
+    <Drawer
+      drawerContent={(props) => <CustomAdminDrawerContent {...props} />}
+      screenOptions={{
+        headerShown: false,
+        drawerStyle: {
+          backgroundColor: COLORS.drawerBg,
+          width: 280,
+        },
+      }}
+    >
+      {MENU_PRINCIPAL_ADMIN.map((item) => (
+        <Drawer.Screen
+          key={item.name}
+          name={item.name}
+          options={{ title: item.label }}
+        />
+      ))}
+
+      {ROTAS_SECUNDARIAS_ADMIN.map((routeName) => (
+        <Drawer.Screen
+          key={routeName}
+          name={routeName}
+          options={{
+            drawerItemStyle: { display: 'none' },
+            href: null,
+          }}
+        />
+      ))}
+    </Drawer>
+  );
+}
+
+const styles = StyleSheet.create({
+  drawerContainer: {
+    flex: 1,
+    backgroundColor: COLORS.drawerBg,
+  },
+  drawerHeader: {
+    backgroundColor: COLORS.drawerHeaderBg,
+    paddingHorizontal: 20,
+    paddingTop: 28,
+    paddingBottom: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderSubtle,
+  },
+  brandTitle: {
+    color: COLORS.accent,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  brandSub: {
+    color: COLORS.textMuted,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  scrollContent: {
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    gap: 4,
+  },
+  itemBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    borderRadius: 24,
+  },
+  itemBtnAtivo: {
+    backgroundColor: COLORS.accent,
+  },
+  itemTexto: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  itemTextoAtivo: {
+    color: COLORS.textOnAccent,
+    fontWeight: 'bold',
+  },
+  logoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.borderSubtle,
+  },
+  logoutTexto: {
+    color: COLORS.danger,
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+});

@@ -3,9 +3,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { addDoc, collection, deleteDoc, doc, getDocs, updateDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
-import { Alert, FlatList, Modal, SafeAreaView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, FlatList, Modal, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { db } from '../../config/firebase';
-
 export default function TelaEstoqueCaixa() {
   const router = useRouter();
   const [produtos, setProdutos] = useState([]);
