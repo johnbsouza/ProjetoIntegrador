@@ -60,13 +60,15 @@ export default function RootLayout() {
 
     const rotaAtual = segments[0];
 
+    // Se não estiver logado, permite aceder ao index (login), cadastro e esqueci-senha
     if (!usuarioLogado) {
-       if (rotaAtual !== 'index') {
+      if (rotaAtual !== 'index' && rotaAtual !== 'cadastro' && rotaAtual !== 'esqueci-senha') {
         router.replace('/');
       }
       return;
     }
 
+    // Se estiver logado, redireciona para o painel correspondente ao seu grupo de acesso
     if (grupoAcesso && rotaAtual !== grupoAcesso) {
       router.replace('/' + grupoAcesso);
     }
@@ -91,6 +93,10 @@ export default function RootLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="cadastro" />
+      <Stack.Screen name="esqueci-senha" />
+      <Stack.Screen name="(admin)" />
+      <Stack.Screen name="(cliente)" />
+      <Stack.Screen name="(profissional)" />
     </Stack>
   );
 }

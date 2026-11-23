@@ -1,24 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { Drawer } from 'expo-router/drawer';
 import { Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import BotaoAcessibilidade from '../../components/BotaoAcessibilidade';
 
 export default function AdminLayout() {
-
-  async function Sair() {
-  try {
-    await signOut(auth);
-
-  } catch (error) {
-    console.error('Erro ao fazer logout:', error);
-
-    Alert.alert(
-      'Erro',
-      'Não foi possível sair do aplicativo.'
-    );
-  }
-}
+  const router = useRouter();
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -172,7 +160,6 @@ export default function AdminLayout() {
           }} 
         />
 
-        {/* PERFIL DO ADMIN NO MENU LATERAL */}
         <Drawer.Screen 
           name="perfil" 
           options={{ 
@@ -207,7 +194,6 @@ export default function AdminLayout() {
         <Drawer.Screen name="editar-perfil" options={{ drawerItemStyle: { display: 'none' }, headerTitle: 'Editar Perfil' }} />
         <Drawer.Screen name="novo-profissional" options={{ drawerItemStyle: { display: 'none' }, headerTitle: 'Novo Profissional' }} />
         <Drawer.Screen name="editar-profissional" options={{ drawerItemStyle: { display: 'none' }, headerTitle: 'Editar Profissional' }} />
-        <Drawer.Screen name="novo-servico" options={{ drawerItemStyle: { display: 'none' }, headerTitle: 'Novo Serviço' }} />
         <Drawer.Screen name="guia" options={{ drawerItemStyle: { display: 'none' }, headerTitle: 'Guia da Plataforma' }} />
         <Drawer.Screen name="equipe" options={{ drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="estoque" options={{ drawerItemStyle: { display: 'none' } }} />

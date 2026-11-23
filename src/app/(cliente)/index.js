@@ -1,94 +1,65 @@
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { signOut } from 'firebase/auth';
-import { addDoc, collection, getDocs, query, serverTimestamp, where } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { auth, db } from '../../config/firebase';
+import { db } from '../../config/firebase';
 
 export default function PainelCliente() {
   const router = useRouter();
   const [servicos, setServicos] = useState([]);
-  const [pacotes, setPacotes] = useState([]);
-  const [meusAgendamentos, setMeusAgendamentos] = useState([]);
-  const [servicoSelecionado, setServicoSelecionado] = useState(null);
-
-  const usuarioAtual = auth.currentUser;
+  const [servicosSelecionados, setServicosSelecionados] = useState([]);
+  const [busca, setBusca] = useState('');
 
   useEffect(() => {
-    async function carregarDadosCliente() {
+    async function carregarServicos() {
       try {
         const servicosSnap = await getDocs(collection(db, 'servicos'));
         const listaServicos = [];
-        servicosSnap.forEach((doc) => {
-          listaServicos.push({ id: doc.id, ...doc.data() });
+        servicosSnap.forEach((docSnap) => {
+          listaServicos.push({ id: docSnap.id, ...docSnap.data() });
         });
         setServicos(listaServicos);
-
-        const pacotesSnap = await getDocs(collection(db, 'pacotes'));
-        const listaPacotes = [];
-        pacotesSnap.forEach((doc) => {
-          listaPacotes.push({ id: doc.id, ...doc.data() });
-        });
-        setPacotes(listaPacotes);
-
-        if (usuarioAtual) {
-          const q = query(collection(db, 'agendamentos'), where('clienteId', '==', usuarioAtual.uid));
-          const agendamentosSnap = await getDocs(q);
-          const listaAgendamentos = [];
-          agendamentosSnap.forEach((doc) => {
-            listaAgendamentos.push({ id: doc.id, ...doc.data() });
-          });
-          setMeusAgendamentos(listaAgendamentos);
-        }
       } catch (error) {
-        console.error("Erro ao carregar dados do cliente:", error);
+        console.error("Erro ao carregar serviços:", error);
       }
     }
 
-    carregarDadosCliente();
+    carregarServicos();
   }, []);
 
-  async function agendarServico(servico) {
-    if (!usuarioAtual) {
-      Alert.alert('Erro', 'Utilizador não autenticado.');
+  function toggleSelecionarServico(servico) {
+    const jaExiste = servicosSelecionados.some((s) => s.id === servico.id);
+    if (jaExiste) {
+      setServicosSelecionados(servicosSelecionados.filter((s) => s.id !== servico.id));
+    } else {
+      setServicosSelecionados([...servicosSelecionados, servico]);
+    }
+  }
+
+  function avancarParaAgendamento() {
+    if (servicosSelecionados.length === 0) {
+      Alert.alert('Atenção', 'Selecione pelo menos um serviço para continuar.');
       return;
     }
 
-    try {
-      await addDoc(collection(db, 'agendamentos'), {
-        clienteId: usuarioAtual.uid,
-        clienteEmail: usuarioAtual.email,
-        servicoNome: servico.nome,
-        preco: servico.preco,
-        status: 'Confirmado',
-        dataCriacao: serverTimestamp(),
-      });
-
-      Alert.alert('Sucesso', 'Serviço agendado com sucesso!');
-      
-      const q = query(collection(db, 'agendamentos'), where('clienteId', '==', usuarioAtual.uid));
-      const agendamentosSnap = await getDocs(q);
-      const listaAgendamentos = [];
-      agendamentosSnap.forEach((doc) => {
-        listaAgendamentos.push({ id: doc.id, ...doc.data() });
-      });
-      setMeusAgendamentos(listaAgendamentos);
-
-    } catch (error) {
-      Alert.alert('Erro', 'Não foi possível concluir o agendamento.');
-    }
+    // Passa apenas os IDs limpos por parâmetro
+    const idsString = servicosSelecionados.map((s) => s.id).join(',');
+    router.push({
+      pathname: '/(cliente)/agendar',
+      params: { ids: idsString },
+    });
   }
 
-  async function sair() {
-    try {
-      await signOut(auth);
-      router.replace('/');
-    } catch (error) {
-      console.error("Erro ao sair:", error);
-    }
-  }
+  const servicosFiltrados = servicos.filter((item) =>
+    item.nome.toLowerCase().includes(busca.toLowerCase())
+  );
+
+  const valorTotalSelecionado = servicosSelecionados.reduce((acc, curr) => {
+    return acc + (Number(curr.preco) || 0);
+  }, 0);
 
   return (
     <LinearGradient colors={['#1E201E', '#434643', '#1A1C1A']} style={{ flex: 1 }}>
@@ -97,84 +68,116 @@ export default function PainelCliente() {
         
         <View style={styles.header}>
           <View>
-            <Text style={styles.saudacao}>Olá, Bem-vinda!</Text>
+            <Text style={styles.saudacao}>Olá, Bem-vinda! ✨</Text>
             <Text style={styles.subtitulo}>Lirium Esmalteria & Spa</Text>
           </View>
-          
+        </View>
+
+        <View style={styles.searchContainer}>
+          <Ionicons name="search-outline" size={18} color="rgba(255, 255, 255, 0.4)" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Pesquisar serviço..."
+            placeholderTextColor="rgba(255, 255, 255, 0.4)"
+            value={busca}
+            onChangeText={setBusca}
+          />
+          {busca.length > 0 && (
+            <TouchableOpacity onPress={() => setBusca('')}>
+              <Ionicons name="close-circle" size={16} color="rgba(255, 255, 255, 0.5)" />
+            </TouchableOpacity>
+          )}
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
           
-          <Text style={styles.secaoTitulo}>Os Meus Agendamentos</Text>
-          {meusAgendamentos.length === 0 ? (
-            <View style={styles.vazioCard}>
-              <Text style={styles.vazioTexto}>Ainda não tens agendamentos ativos.</Text>
-            </View>
+          <Text style={styles.secaoTitulo}>
+            {busca.length > 0 ? `Resultados (${servicosFiltrados.length})` : 'Escolha um ou mais serviços'}
+          </Text>
+
+          {servicosFiltrados.length === 0 ? (
+            <Text style={styles.nenhumResultado}>Nenhum serviço encontrado.</Text>
           ) : (
-            meusAgendamentos.map((item) => (
-              <View key={item.id} style={styles.agendamentoCard}>
-                <View>
-                  <Text style={styles.agendamentoTitulo}>{item.servicoNome}</Text>
-                  <Text style={styles.agendamentoSub}>Estado: {item.status}</Text>
-                </View>
-                <Text style={styles.agendamentoValor}>R$ {Number(item.preco).toFixed(2).replace('.', ',')}</Text>
-              </View>
-            ))
+            <View style={styles.gridContainer}>
+              {servicosFiltrados.map((item) => {
+                const selecionado = servicosSelecionados.some((s) => s.id === item.id);
+                return (
+                  <TouchableOpacity 
+                    key={item.id} 
+                    style={[styles.cardCompacto3Col, selecionado && styles.cardSelecionado]}
+                    onPress={() => toggleSelecionarServico(item)}
+                  >
+                    {selecionado && (
+                      <View style={styles.badgeCheck}>
+                        <Ionicons name="checkmark" size={12} color="#1E201E" />
+                      </View>
+                    )}
+                    <Text style={styles.cardTitulo3Col} numberOfLines={2}>{item.nome}</Text>
+                    <Text style={styles.cardValor3Col}>R$ {Number(item.preco).toFixed(2).replace('.', ',')}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           )}
 
-          <Text style={styles.secaoTitulo}>Serviços Disponíveis</Text>
-          {servicos.map((item) => (
-            <View key={item.id} style={styles.card}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.cardTitulo}>{item.nome}</Text>
-                <Text style={styles.cardSub}>Duração: {item.tempo} min</Text>
-              </View>
-              <View style={{ alignItems: 'flex-end', marginRight: 15 }}>
-                <Text style={styles.cardValor}>R$ {Number(item.preco).toFixed(2).replace('.', ',')}</Text>
-              </View>
-              <TouchableOpacity style={styles.botaoAgendar} onPress={() => agendarServico(item)}>
-                <Text style={styles.textoAgendar}>Agendar</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
-
-          <Text style={styles.secaoTitulo}>Pacotes Promocionais</Text>
-          {pacotes.map((item) => (
-            <View key={item.id} style={styles.card}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.cardTitulo}>{item.nome}</Text>
-                <Text style={styles.cardSub}>{item.descricao}</Text>
-              </View>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={styles.cardValor}>R$ {Number(item.preco).toFixed(2).replace('.', ',')}</Text>
-              </View>
-            </View>
-          ))}
-
         </ScrollView>
+
+        {servicosSelecionados.length > 0 && (
+          <TouchableOpacity style={styles.botaoFlutuante} onPress={avancarParaAgendamento}>
+            <View>
+              <Text style={styles.textoFlutuanteQtd}>{servicosSelecionados.length} serviço(s) selecionado(s)</Text>
+              <Text style={styles.textoFlutuanteValor}>Total: R$ {valorTotalSelecionado.toFixed(2).replace('.', ',')}</Text>
+            </View>
+            <View style={styles.btnAvancarFixo}>
+              <Text style={styles.textoBtnAvancar}>Avançar</Text>
+              <Ionicons name="arrow-forward" size={16} color="#1E201E" />
+            </View>
+          </TouchableOpacity>
+        )}
       </SafeAreaView>
     </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  tela: { flex: 1, paddingHorizontal: 24 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 20 },
-  saudacao: { fontSize: 24, color: '#FF98B9', fontWeight: 'bold', letterSpacing: 0.5 },
-  subtitulo: { fontSize: 13, color: 'rgba(209, 209, 209, 0.7)', marginTop: 2 },
-  botaoSair: { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(89, 89, 89, 0.6)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(107, 110, 107, 0.5)' },
-  scrollContainer: { paddingBottom: 30 },
-  secaoTitulo: { fontSize: 16, fontWeight: '600', color: '#FF98B9', marginBottom: 15, marginTop: 15, letterSpacing: 0.5 },
-  vazioCard: { backgroundColor: 'rgba(67, 70, 67, 0.8)', padding: 18, borderRadius: 16, alignItems: 'center', marginBottom: 10, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' },
-  vazioTexto: { color: 'rgba(209, 209, 209, 0.6)', fontSize: 13 },
-  agendamentoCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(67, 70, 67, 0.8)', padding: 16, borderRadius: 16, marginBottom: 10, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' },
-  agendamentoTitulo: { color: '#FFF', fontSize: 15, fontWeight: 'bold' },
-  agendamentoSub: { color: 'rgba(209, 209, 209, 0.6)', fontSize: 12, marginTop: 2 },
-  agendamentoValor: { color: '#FF98B9', fontSize: 15, fontWeight: 'bold' },
-  card: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(89, 89, 89, 0.45)', padding: 16, borderRadius: 18, marginBottom: 12, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' },
-  cardTitulo: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
-  cardSub: { color: 'rgba(209, 209, 209, 0.6)', fontSize: 12, marginTop: 4 },
-  cardValor: { color: '#FF98B9', fontSize: 15, fontWeight: 'bold' },
-  botaoAgendar: { backgroundColor: '#FF98B9', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, marginLeft: 10 },
-  textoAgendar: { color: '#434643', fontWeight: 'bold', fontSize: 12 }
+  tela: { flex: 1, paddingHorizontal: 16 },
+  header: { marginTop: 10, marginBottom: 10 },
+  saudacao: { fontSize: 20, color: '#FF98B9', fontWeight: 'bold' },
+  subtitulo: { fontSize: 12, color: 'rgba(209, 209, 209, 0.7)', marginTop: 2 },
+  searchContainer: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(67, 70, 67, 0.9)',
+    borderRadius: 10, paddingHorizontal: 12, height: 42, borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)', marginBottom: 8,
+  },
+  searchIcon: { marginRight: 8 },
+  searchInput: { flex: 1, color: '#FFF', fontSize: 13 },
+  scrollContainer: { paddingBottom: 110 },
+  secaoTitulo: { fontSize: 14, fontWeight: '600', color: '#FF98B9', marginBottom: 10, marginTop: 12 },
+  nenhumResultado: { color: 'rgba(209, 209, 209, 0.5)', fontSize: 12, fontStyle: 'italic', textAlign: 'center', marginTop: 20 },
+  gridContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  cardCompacto3Col: {
+    width: '31.5%', backgroundColor: 'rgba(89, 89, 89, 0.5)', padding: 10, borderRadius: 12,
+    marginBottom: 10, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)',
+    justifyContent: 'space-between', minHeight: 90, position: 'relative',
+  },
+  cardSelecionado: { borderColor: '#FF98B9', backgroundColor: 'rgba(255, 152, 185, 0.2)' },
+  badgeCheck: {
+    position: 'absolute', top: 6, right: 6, backgroundColor: '#FF98B9',
+    width: 18, height: 18, borderRadius: 9, justifyContent: 'center', alignItems: 'center',
+  },
+  cardTitulo3Col: { color: '#FFF', fontSize: 11, fontWeight: 'bold', textAlign: 'center', marginBottom: 4 },
+  cardValor3Col: { color: '#FF98B9', fontSize: 12, fontWeight: 'bold', textAlign: 'center' },
+  botaoFlutuante: {
+    position: 'absolute', bottom: 15, left: 16, right: 16,
+    backgroundColor: '#595959', borderRadius: 14, padding: 14,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    borderWidth: 1, borderColor: '#FF98B9', elevation: 6,
+  },
+  textoFlutuanteQtd: { color: '#FFF', fontSize: 13, fontWeight: 'bold' },
+  textoFlutuanteValor: { color: '#FF98B9', fontSize: 12, marginTop: 2 },
+  btnAvancarFixo: {
+    backgroundColor: '#FF98B9', flexDirection: 'row', alignItems: 'center',
+    paddingVertical: 10, paddingHorizontal: 16, borderRadius: 10, gap: 6,
+  },
+  textoBtnAvancar: { color: '#1E201E', fontWeight: 'bold', fontSize: 13 },
 });

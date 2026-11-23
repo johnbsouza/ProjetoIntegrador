@@ -2,19 +2,43 @@ import { Ionicons } from '@expo/vector-icons';
 import { usePathname, useRouter } from 'expo-router';
 import { Drawer } from 'expo-router/drawer';
 import { signOut } from 'firebase/auth';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { doc, getDoc } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
+import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BotaoAcessibilidade from '../../components/BotaoAcessibilidade';
-import { auth } from '../../config/firebase';
+import { auth, db } from '../../config/firebase';
 
 function CustomDrawerCliente(props) {
   const router = useRouter();
   const pathname = usePathname();
+  const [fotoPerfil, setFotoPerfil] = useState(null);
+  const [nomeCliente, setNomeCliente] = useState('Cliente');
+
+  useEffect(() => {
+    async function carregarFotoDrawer() {
+      const user = auth.currentUser;
+      if (user) {
+        try {
+          const userDoc = await getDoc(doc(db, 'usuarios', user.uid));
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            if (data.fotoPerfil) setFotoPerfil(data.fotoPerfil);
+            if (data.nome) setNomeCliente(data.nome);
+          }
+        } catch (error) {
+          console.error("Erro ao carregar foto do drawer:", error);
+        }
+      }
+    }
+    carregarFotoDrawer();
+  }, []);
 
   const menuItems = [
     { label: 'Início', route: '/(cliente)', icon: 'home-outline' },
     { label: 'Explorar Serviços', route: '/(cliente)/explorar', icon: 'search-outline' },
+    { label: 'Pacotes Promocionais', route: '/(cliente)/pacotes', icon: 'gift-outline' },
     { label: 'Meus Agendamentos', route: '/(cliente)/agenda', icon: 'calendar-outline' },
     { label: 'Notificações', route: '/(cliente)/notificacoes', icon: 'notifications-outline' },
     { label: 'Meu Perfil', route: '/(cliente)/perfil', icon: 'person-outline' },
@@ -28,16 +52,13 @@ function CustomDrawerCliente(props) {
         style: 'destructive',
         onPress: async () => {
           try {
-            // 1. Fecha o menu lateral para desbloquear a navegação
             if (props?.navigation) {
               props.navigation.closeDrawer();
             }
-            // 2. Desconecta a conta no Firebase
             await signOut(auth);
           } catch (error) {
             console.error('Erro ao encerrar sessão:', error);
           } finally {
-            // 3. Redireciona obrigatoriamente para a tela de login inicial
             router.replace('/');
           }
         },
@@ -45,14 +66,20 @@ function CustomDrawerCliente(props) {
     ]);
   }
 
+  const inicial = nomeCliente ? nomeCliente.charAt(0).toUpperCase() : 'C';
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#595959' }}>
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
         <View style={styles.drawerHeader}>
           <View style={styles.profileCircle}>
-            <Ionicons name="person" size={36} color="#1E201E" />
+            {fotoPerfil ? (
+              <Image source={{ uri: fotoPerfil }} style={styles.avatarImage} />
+            ) : (
+              <Text style={styles.avatarText}>{inicial}</Text>
+            )}
           </View>
-          <Text style={styles.drawerTitle}>Olá, Cliente!</Text>
+          <Text style={styles.drawerTitle}>Olá, {nomeCliente.split(' ')[0]}!</Text>
           <Text style={styles.drawerSubtitle}>Área Exclusiva</Text>
         </View>
 
@@ -73,7 +100,6 @@ function CustomDrawerCliente(props) {
             );
           })}
 
-          {/* BOTAO SAIR DA CONTA */}
           <TouchableOpacity
             style={[styles.menuItem, { marginTop: 10 }]}
             onPress={handleLogout}
@@ -87,7 +113,7 @@ function CustomDrawerCliente(props) {
 
         <View style={styles.drawerFooter}>
           <View style={styles.linhaSeparadora} />
-          <Text style={styles.footerText}>Esmalteria App</Text>
+          <Text style={styles.footerText}>Lirium Esmalteria</Text>
           <Text style={styles.footerSubText}>Versão 1.0.0</Text>
         </View>
       </ScrollView>
@@ -109,6 +135,7 @@ export default function ClienteLayout() {
       >
         <Drawer.Screen name="index" options={{ headerTitle: 'Área do Cliente' }} />
         <Drawer.Screen name="explorar" options={{ headerTitle: 'Serviços' }} />
+        <Drawer.Screen name="pacotes" options={{ headerTitle: 'Pacotes Promocionais' }} />
         <Drawer.Screen name="agenda" options={{ headerTitle: 'Meus Agendamentos' }} />
         <Drawer.Screen name="notificacoes" options={{ headerTitle: 'Notificações' }} />
         <Drawer.Screen name="perfil" options={{ headerTitle: 'Meu Perfil' }} />
@@ -137,57 +164,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 15,
+    overflow: 'hidden',
   },
-  drawerTitle: {
-    color: '#FFF',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  drawerSubtitle: {
-    color: '#FF98B9',
-    fontSize: 14,
-    marginTop: 3,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    borderRadius: 10,
-    marginBottom: 5,
-  },
-  menuItemActive: {
-    backgroundColor: '#FF98B9',
-  },
-  menuText: {
-    color: '#D1D1D1',
-    fontSize: 15,
-    fontWeight: '600',
-    marginLeft: 15,
-  },
-  menuTextActive: {
-    color: '#1E201E',
-    fontWeight: 'bold',
-  },
-  drawerFooter: {
-    padding: 20,
-    paddingBottom: 30,
-    alignItems: 'center',
-  },
-  linhaSeparadora: {
-    width: '80%',
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    marginBottom: 15,
-  },
-  footerText: {
-    color: '#D1D1D1',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  footerSubText: {
-    color: 'rgba(209, 209, 209, 0.5)',
-    fontSize: 12,
-    marginTop: 2,
-  },
+  avatarImage: { width: 70, height: 70, borderRadius: 35 },
+  avatarText: { fontSize: 26, fontWeight: 'bold', color: '#1E201E' },
+  drawerTitle: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
+  drawerSubtitle: { color: '#FF98B9', fontSize: 14, marginTop: 3 },
+  menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 15, borderRadius: 10, marginBottom: 5 },
+  menuItemActive: { backgroundColor: '#FF98B9' },
+  menuText: { color: '#D1D1D1', fontSize: 15, fontWeight: '600', marginLeft: 15 },
+  menuTextActive: { color: '#1E201E', fontWeight: 'bold' },
+  drawerFooter: { padding: 20, paddingBottom: 30, alignItems: 'center' },
+  linhaSeparadora: { width: '80%', height: 1, backgroundColor: 'rgba(255, 255, 255, 0.1)', marginBottom: 15 },
+  footerText: { color: '#D1D1D1', fontWeight: 'bold', fontSize: 14 },
+  footerSubText: { color: 'rgba(209, 209, 209, 0.5)', fontSize: 12, marginTop: 2 },
 });
