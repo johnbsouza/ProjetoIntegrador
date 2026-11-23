@@ -87,9 +87,19 @@ export default function EsqueciSenha() {
             disabled={carregando}
           >
             {carregando ? (
-              <ActivityIndicator color="#1E201E" />
-            ) : (
-              <Text style={styles.botaoTexto}>Enviar E-mail</Text>
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator
+                size='small'
+                color='#1E201E'
+                />
+                <Text style={styles.botaoTexto}>
+                  Enviando...
+                </Text>
+              </View>
+            ): (
+              <Text style={styles.botaoTexto}>
+                Enviar E-mail
+              </Text>
             )}
           </TouchableOpacity>
         </View>
@@ -179,5 +189,12 @@ const styles = StyleSheet.create({
     color: '#1E201E',
     fontSize: 16,
     fontWeight: 'bold'
+  },
+
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10
   }
 });

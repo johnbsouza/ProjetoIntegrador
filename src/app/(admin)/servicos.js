@@ -99,8 +99,8 @@ export default function TelaServicos() {
     const precoNumerico = Number(
       precoFormatado.replace(/[^\d]/g, '')) / 100;
 
-      const tempoNumerico = Number(tempo)
-      
+    const tempoNumerico = Number(tempo)
+
     if (!nome.trim()) {
       Alert.alert('Nome', 'Digite um nome de serviço!');
       return;
@@ -142,6 +142,8 @@ export default function TelaServicos() {
       //buscarServicos();
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível guardar o serviço.');
+    } finally {
+      setCarregando(false)
     }
   }
 

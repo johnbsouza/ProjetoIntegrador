@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { useState } from 'react';
-import { Alert, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth, db } from '../config/firebase';
 
@@ -32,7 +32,7 @@ export default function TelaCadastro() {
   }
 
   async function cadastrarUtilizador() {
-    if (!nome || !email || !senha || !telefone) {
+    if (!nome.trim() || !email.trim() || !senha.trim() || !telefone.trim()) {
       Alert.alert('Atenção', 'Preencha todos os campos.');
       return;
     }
@@ -42,16 +42,13 @@ export default function TelaCadastro() {
       const credencial = await createUserWithEmailAndPassword(auth, email, senha);
       const uid = credencial.user.uid;
 
-      // Lógica inteligente de níveis de acesso por e-mail
-      let tipoAcesso = 'usuario'; // Padrão para clientes
+      let tipoAcesso = 'cliente'; // Padrão para clientes
 
       // Substitua pelo seu e-mail oficial de Administrador
-      if (email.includes('.admin@lirium.com')) {
+      if (email.toLowerCase().includes('.admin@lirium.com')) {
         tipoAcesso = 'admin';
-      } else if (email.includes('.profissional@lirium.com')) {
+      } else if (email.toLocaleLowerCase().includes('.profissional@lirium.com')) {
         tipoAcesso = 'profissional';
-      } else if (email.includes('@lirium.com')) {
-        tipoAcesso = 'cliente'
       }
 
       await setDoc(doc(db, 'usuarios', uid), {
@@ -63,13 +60,26 @@ export default function TelaCadastro() {
         dataCriacao: serverTimestamp(),
       });
 
-      setCarregando(false);
-      Alert.alert('Sucesso', `Conta criada com sucesso como [${tipoAcesso.toLowerCase()}]`, [
+      Alert.alert('Sucesso', `Conta criada com sucesso como: ${tipoAcesso.toLowerCase()}`, [
         { text: 'OK', onPress: () => router.replace('/') }
       ]);
     } catch (error) {
-      setCarregando(false);
       Alert.alert('Erro no Cadastro', error.message);
+      console.log('Erro no cadastro', error);
+
+      let mensagem = 'Não foi possível realizar o cadastro';
+
+      if (error.code === 'auth/email-already-in-use') {
+        mensagem = 'Este e-mail já está cadastrado.'
+      } else if (error.code === 'auth/invalid-email') {
+        mensagem = 'O e-mail informado é inválido.'
+      } else if (error.code === 'auth/weak-password') {
+        mensagem = 'A senha precisa ter pelo menos 6 caracteres.'
+      }
+
+      Alert.alert('Erro no cadastro', mensagem)
+    } finally {
+      setCarregando(false)
     }
   }
 
@@ -77,7 +87,7 @@ export default function TelaCadastro() {
     <LinearGradient colors={['#1E201E', '#434643', '#1A1C1A']} style={{ flex: 1 }}>
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-        
+
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={20} color="#FF98B9" />
@@ -86,18 +96,18 @@ export default function TelaCadastro() {
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          
-          <TextInput 
-            style={styles.input} 
-            placeholder="Nome Completo" 
+
+          <TextInput
+            style={styles.input}
+            placeholder="Nome Completo"
             placeholderTextColor="rgba(255, 255, 255, 0.4)"
             value={nome}
             onChangeText={setNome}
           />
 
-          <TextInput 
-            style={styles.input} 
-            placeholder="E-mail" 
+          <TextInput
+            style={styles.input}
+            placeholder="E-mail"
             placeholderTextColor="rgba(255, 255, 255, 0.4)"
             keyboardType="email-address"
             autoCapitalize="none"
@@ -105,30 +115,44 @@ export default function TelaCadastro() {
             onChangeText={setEmail}
           />
 
-          <TextInput 
-            style={styles.input} 
-            placeholder="Telefone" 
+          <TextInput
+            style={styles.input}
+            placeholder="Telefone"
             placeholderTextColor="rgba(255, 255, 255, 0.4)"
             keyboardType="phone-pad"
             value={telefone}
             onChangeText={formatarTelefone}
           />
 
-          <TextInput 
-            style={styles.input} 
-            placeholder="Palavra-passe (mínimo 6 dígitos)" 
+          <TextInput
+            style={styles.input}
+            placeholder="Palavra-passe (mínimo 6 dígitos)"
             placeholderTextColor="rgba(255, 255, 255, 0.4)"
             secureTextEntry
             value={senha}
             onChangeText={setSenha}
           />
 
-          <TouchableOpacity 
-            style={[styles.botaoSalvar, carregando && { opacity: 0.7 }]} 
+          <TouchableOpacity
+            style={[styles.botaoSalvar, carregando && { opacity: 0.7 }]}
             onPress={cadastrarUtilizador}
             disabled={carregando}
           >
-            <Text style={styles.textoBotao}>{carregando ? 'A cadastrar...' : 'Cadastrar'}</Text>
+            {carregando ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator
+                  size='small'
+                  color='#434643'
+                />
+                <Text style={styles.textoBotao}>
+                  Cadastrando...
+                </Text>
+              </View>
+            ) : (
+              <Text style={styles.textoBotao}>
+                Cadastrar
+              </Text>
+            )}
           </TouchableOpacity>
 
         </ScrollView>
@@ -145,5 +169,6 @@ const styles = StyleSheet.create({
   scrollContent: { paddingBottom: 30 },
   input: { backgroundColor: 'rgba(89, 89, 89, 0.6)', color: '#FFF', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, fontSize: 15, borderWidth: 1, borderColor: 'rgba(209, 209, 209, 0.15)', marginBottom: 15 },
   botaoSalvar: { backgroundColor: '#FF98B9', paddingVertical: 16, borderRadius: 12, alignItems: 'center', marginTop: 10 },
-  textoBotao: { color: '#434643', fontWeight: 'bold', fontSize: 16 }
+  textoBotao: { color: '#434643', fontWeight: 'bold', fontSize: 16 },
+  loadingContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10}
 });

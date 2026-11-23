@@ -57,7 +57,7 @@ export default function LoginTela() {
   // 3. Executa o login com E-mail e Senha no Firebase
   async function handleLogin() {
     if (!email.trim() || !senha.trim()) {
-      Alert.alert('Campos Obrigatórios', 'Por favor, preencha o e-mail e a palavra-passe.');
+      Alert.alert('Campos Obrigatórios', 'Por favor, preencha o e-mail e a sua senha.');
       return;
     }
 
@@ -67,18 +67,17 @@ export default function LoginTela() {
       await redirecionarPorNivelAcesso(userCredential.user.uid);
     } catch (error) {
       console.error('Erro no login:', error);
-      let mensagem = 'Falha ao realizar login. Verifique as suas credenciais.';
+      let mensagem = 'Falha ao realizar login. Verifique suas credenciais de acesso.';
 
       if (
         error.code === 'auth/user-not-found' ||
         error.code === 'auth/wrong-password' ||
         error.code === 'auth/invalid-credential'
       ) {
-        mensagem = 'E-mail ou palavra-passe incorretos.';
+        mensagem = 'E-mail ou senha incorretos.';
       } else if (error.code === 'auth/invalid-email') {
         mensagem = 'O formato do e-mail é inválido.';
       }
-
       Alert.alert('Erro de Acesso', mensagem);
       setCarregando(false);
     }
@@ -88,7 +87,7 @@ export default function LoginTela() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#FF98B9" />
-        <Text style={styles.loadingText}>A carregar Lirium Esmalteria...</Text>
+        <Text style={styles.loadingText}>Verificando sua sessão...</Text>
       </View>
     );
   }
@@ -139,7 +138,7 @@ export default function LoginTela() {
             disabled={carregando}
           >
             {carregando ? (
-              <ActivityIndicator color="#1E201E" />
+              <ActivityIndicator color="#1E201E" size='small' />
             ) : (
               <Text style={styles.loginButtonText}>Entrar</Text>
             )}

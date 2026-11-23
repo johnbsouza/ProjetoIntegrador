@@ -11,6 +11,7 @@ export default function PerfilProfissionalScreen() {
   const router = useRouter();
   const [usuario, setUsuario] = useState(null);
   const [carregando, setCarregando] = useState(true);
+  const [saindo, setSaindo] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -44,12 +45,16 @@ export default function PerfilProfissionalScreen() {
   function handleLogout() {
     Alert.alert('Sair da Conta', 'Tem certeza de que deseja encerrar a sua sessão?', [
       { text: 'Cancelar', style: 'cancel' },
-      {text: 'Sair',style: 'destructive',
+      {
+        text: 'Sair', style: 'destructive',
         onPress: async () => {
+          setSaindo(true)
           try {
             await signOut(auth);
           } catch (error) {
             console.error('Erro ao encerrar sessão:', error);
+            Alert.alert('Erro', 'Não foi possível encerrar a sessão.');
+            setSaindo(false)
           }
         },
       },
@@ -77,7 +82,7 @@ export default function PerfilProfissionalScreen() {
           </View>
 
           <ScrollView contentContainerStyle={styles.menuContainer}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.menuItem}
               onPress={() => router.push('/(profissional)/editar-perfil')}
             >
@@ -88,12 +93,22 @@ export default function PerfilProfissionalScreen() {
               <Ionicons name="chevron-forward" size={20} color="#D1D1D1" />
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.logoutButton}
               onPress={handleLogout}
+              disabled={saindo}
             >
-              <Ionicons name="log-out-outline" size={22} color="#FF4C4C" />
-              <Text style={styles.logoutText}>Sair da Conta</Text>
+              {saindo ? (
+                <>
+                  <ActivityIndicator color='#FF4C4C' size='small' />
+                  <Text style={styles.logoutText}>Saindo...</Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons name="log-out-outline" size={22} color="#FF4C4C" />
+                  <Text style={styles.logoutText}>Sair da Conta</Text>
+                </>
+              )}
             </TouchableOpacity>
           </ScrollView>
         </>
