@@ -1,21 +1,24 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { addDoc, collection, deleteDoc, doc, getDocs, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, onSnapshot, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { Alert, FlatList, Modal, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { db } from '../../config/firebase';
+
+
 export default function TelaServicos() {
   const router = useRouter();
   const [servicos, setServicos] = useState([]);
-  const [modalVisivel, setModalVisivel] = useState(false);
   const [nome, setNome] = useState('');
   const [precoFormatado, setPrecoFormatado] = useState('');
-  const [tempoMinutos, setTempoMinutos] = useState('');
-  const [idEditando, setIdEditando] = useState(null);
+  const [tempo, setTempo] = useState('');
+  const [id, setId] = useState('');
+  const [modalVisivel, setModalVisivel] = useState(false);
+  const [carregando, setCarregando] = useState(true)
 
-  const buscarServicos = async () => {
+  /*const buscarServicos = async () => {
     try {
       const querySnapshot = await getDocs(collection(db, 'servicos'));
       const lista = [];
@@ -26,11 +29,55 @@ export default function TelaServicos() {
     } catch (error) {
       console.error("Erro ao buscar serviços:", error);
     }
-  };
+  };*/
 
   useEffect(() => {
-    buscarServicos();
+    {/* buscarServicos() */ }
+    const referencia = collection(db, 'servicos');
+
+    const cancelar = onSnapshot(
+      referencia,
+      (snapshot) => {
+        const lista = snapshot.docs.map((item) => ({
+          id: item.id,
+          ...item.data(),
+        }));
+
+        setServicos(lista)
+        setCarregando(false)
+      },
+      (erro) => {
+        console.error('Erro ao buscar os serviços:', erro)
+        setCarregando(false);
+        Alert.alert('Erro', 'Não foi possível carregar os serviços')
+      }
+    )
+    return cancelar;
   }, []);
+
+  function excluirServico(id) {
+    Alert.alert(
+      'Excluir serviço',
+      'Deseja realmente excluir este serviço?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteDoc(doc(db, 'servicos', id));
+              Alert.alert('Sucesso', 'Serviço excluído com sucesso.');
+              {/*buscarServicos();*/ }
+            } catch (error) {
+              console.error('Erro ao excluir serviço:', error)
+              Alert.alert('Erro', 'Não foi possível excluir o serviço.');
+            }
+          }
+        }
+      ]
+    )
+  }
 
   function formatarMoeda(valor) {
     const apenasNumeros = valor.replace(/\D/g, '');
@@ -48,61 +95,69 @@ export default function TelaServicos() {
     return `${horas}h${resto < 10 ? '0' : ''}${resto}`;
   }
 
-  async function salvarServico() {
-    if (!nome || !precoFormatado || !tempoMinutos) {
-      Alert.alert('Atenção', 'Preencha todos os campos.');
+  async function salvarEatualizarServico() {
+    const precoNumerico = Number(
+      precoFormatado.replace(/[^\d]/g, '')) / 100;
+
+      const tempoNumerico = Number(tempo)
+      
+    if (!nome.trim()) {
+      Alert.alert('Nome', 'Digite um nome de serviço!');
+      return;
+
+    } else if (!Number.isFinite(precoNumerico) || precoNumerico <= 0) {
+      Alert.alert('Preço', 'Digite um preço válido.')
+      return;
+
+    } else if (!Number.isInteger(tempoNumerico) || tempoNumerico <= 0) {
+      Alert.alert('Tempo', 'Digite um tempo de serviço em minutos')
       return;
     }
 
-    const precoNumerico = Number(precoFormatado.replace(/[^\d]/g, '')) / 100;
+
 
     try {
-      if (idEditando) {
-        const docRef = doc(db, 'servicos', idEditando);
+      if (id) {
+        const docRef = doc(db, 'servicos', id);
         await updateDoc(docRef, {
           nome,
           preco: precoNumerico,
-          tempo: Number(tempoMinutos)
+          tempo: Number(tempo),
+          servicoAtualizadoEm: serverTimestamp()
         });
         Alert.alert('Sucesso', 'Serviço atualizado com sucesso!');
       } else {
         await addDoc(collection(db, 'servicos'), {
           nome,
           preco: precoNumerico,
-          tempo: Number(tempoMinutos)
+          tempo: tempoNumerico,
+          servicoCriadoEm: serverTimestamp()
         });
-        Alert.alert('Sucesso', 'Serviço criado com sucesso!');
+        Alert.alert('Sucesso', 'Serviço criado com sucesso!', [
+          { text: 'OK' }
+        ]);
       }
 
       fecharModal();
-      buscarServicos();
+      //buscarServicos();
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível guardar o serviço.');
     }
   }
 
-  async function excluirServico(id) {
-    try {
-      await deleteDoc(doc(db, 'servicos', id));
-      buscarServicos();
-    } catch (error) {
-      Alert.alert('Erro', 'Não foi possível excluir.');
-    }
-  }
-
   function abrirEdicao(item) {
-    setIdEditando(item.id);
+    setId(item.id);
     setNome(item.nome);
-    setPrecoFormatado((item.preco * 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
-    setTempoMinutos(String(item.tempo));
+    setPrecoFormatado((item.preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
+    setTempo(String(item.tempo));
     setModalVisivel(true);
   }
 
   function fecharModal() {
-    setIdEditando(null);
+    setId(null);
     setNome('');
     setPrecoFormatado('');
-    setTempoMinutos('');
+    setTempo('');
     setModalVisivel(false);
   }
 
@@ -110,7 +165,6 @@ export default function TelaServicos() {
     <LinearGradient colors={['#1E201E', '#434643', '#1A1C1A']} style={{ flex: 1 }}>
       <SafeAreaView style={estilos.tela}>
         <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-        
         <View style={estilos.header}>
           <TouchableOpacity style={estilos.backButton} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={20} color="#FF98B9" />
@@ -134,10 +188,16 @@ export default function TelaServicos() {
               <View style={{ alignItems: 'flex-end', marginRight: 15 }}>
                 <Text style={estilos.cardValor}>R$ {Number(item.preco).toFixed(2).replace('.', ',')}</Text>
               </View>
-              <TouchableOpacity onPress={() => abrirEdicao(item)} style={estilos.acaoBtn}>
+
+              <TouchableOpacity
+                onPress={() => abrirEdicao(item)}
+                style={estilos.acaoBtn}>
                 <Ionicons name="create-outline" size={18} color="#FF98B9" />
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => excluirServico(item.id)} style={estilos.acaoBtn}>
+
+              <TouchableOpacity
+                onPress={() => excluirServico(item.id)}
+                style={estilos.acaoBtn}>
                 <Ionicons name="trash-outline" size={18} color="#FF98B9" />
               </TouchableOpacity>
             </View>
@@ -147,40 +207,40 @@ export default function TelaServicos() {
         <Modal visible={modalVisivel} animationType="slide" transparent>
           <View style={estilos.modalFundo}>
             <View style={estilos.modalCard}>
-              <Text style={estilos.modalTitulo}>{idEditando ? 'Editar Serviço' : 'Novo Serviço'}</Text>
-              
-              <TextInput 
-                style={estilos.input} 
-                placeholder="Nome do Serviço" 
+              <Text style={estilos.modalTitulo}>{id ? 'Editar Serviço' : 'Novo Serviço'}</Text>
+
+              <TextInput
+                style={estilos.input}
+                placeholder="Nome do Serviço"
                 placeholderTextColor="rgba(255, 255, 255, 0.4)"
                 maxLength={40}
                 value={nome}
                 onChangeText={setNome}
               />
-              
-              <TextInput 
-                style={estilos.input} 
-                placeholder="Preço (R$)" 
+
+              <TextInput
+                style={estilos.input}
+                placeholder="Preço (R$)"
                 placeholderTextColor="rgba(255, 255, 255, 0.4)"
                 keyboardType="numeric"
                 value={precoFormatado}
                 onChangeText={(text) => setPrecoFormatado(formatarMoeda(text))}
               />
 
-              <TextInput 
-                style={estilos.input} 
-                placeholder="Tempo em minutos (ex: 90)" 
+              <TextInput
+                style={estilos.input}
+                placeholder="Tempo em minutos (ex: 90)"
                 placeholderTextColor="rgba(255, 255, 255, 0.4)"
                 keyboardType="numeric"
-                value={tempoMinutos}
-                onChangeText={setTempoMinutos}
+                value={tempo}
+                onChangeText={setTempo}
               />
 
               <View style={estilos.modalBotoes}>
                 <TouchableOpacity style={estilos.botaoCancelar} onPress={fecharModal}>
                   <Text style={estilos.textoBotaoCancelar}>Cancelar</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={estilos.botaoSalvarModal} onPress={salvarServico}>
+                <TouchableOpacity style={estilos.botaoSalvarModal} onPress={salvarEatualizarServico}>
                   <Text style={estilos.textoBotaoSalvar}>Salvar</Text>
                 </TouchableOpacity>
               </View>
