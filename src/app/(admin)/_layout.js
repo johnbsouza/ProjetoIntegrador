@@ -7,7 +7,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -46,47 +45,20 @@ function CustomAdminDrawerContent(props) {
   const { state, navigation } = props;
   const rotaAtual = state?.routes?.[state.index]?.name;
 
-  function handleLogout() {
-    Alert.alert('Sair da Conta', 'Tem certeza de que deseja encerrar a sessão?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Sair',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            if (navigation && typeof navigation.closeDrawer === 'function') {
-              navigation.closeDrawer();
-            }
-            await signOut(auth);
-          } catch (error) {
-            console.error('Erro ao encerrar sessão:', error);
-          } finally {
-            router.replace('/');
-          }
-        },
-      },
-    ]);
+  async function handleLogout() {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error('Erro ao encerrar sessão:', error);
+      Alert.alert('Erro', 'Não foi possível encerrar a sessão.');
+    }
   }
 
   return (
-    <View style={[styles.drawerContainer, { backgroundColor: tema.bgPrimary }]}>
-      <View
-        style={[
-          styles.drawerHeader,
-          {
-            backgroundColor: tema.bgSurface,
-            borderBottomColor: tema.borderSubtle,
-          },
-        ]}
-      >
-        <Text style={[styles.brandTitle, { color: tema.accent, fontSize: tema.fontSize(16) }]}>
-          Lirium Esmalteria & Spa
-        </Text>
-        {!config.modoCalmo && (
-          <Text style={[styles.brandSub, { color: tema.textMuted, fontSize: tema.fontSize(12) }]}>
-            Painel Administrativo
-          </Text>
-        )}
+    <View style={styles.drawerContainer}>
+      <View style={styles.drawerHeader}>
+        <Text style={styles.brandTitle}>Lirium Esmalteria</Text>
+        <Text style={styles.brandSub}>Painel Administrativo</Text>
       </View>
 
       <ScrollView

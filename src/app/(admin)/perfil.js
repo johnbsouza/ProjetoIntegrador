@@ -64,9 +64,7 @@ export default function PerfilAdminScreen() {
           onPress: async () => {
             try {
               await signOut(auth);
-              router.replace('/');
             } catch (error) {
-              console.error('Erro ao encerrar sessão:', error);
               Alert.alert('Erro', 'Não foi possível encerrar a sessão.');
             }
           },

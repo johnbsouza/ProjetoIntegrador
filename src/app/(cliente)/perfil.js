@@ -73,16 +73,21 @@ export default function PerfilScreen() {
     });
   }
 
-  async function handleLogout() {
-    setSaindo(true);
-    try {
-      await signOut(auth);
-      router.replace('/login');
-    } catch (error) {
-      console.error('Erro ao sair:', error);
-      Alert.alert('Erro', 'Não foi possível encerrar a sessão.');
-      setSaindo(false);
-    }
+  function handleLogout() {
+     Alert.alert('Sair da Conta', 'Tem certeza de que deseja sair?', [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Sair', style: 'destructive',
+        onPress: async () => {
+          try {
+            await signOut(auth);
+            setSaindo(true);
+          } catch (error) {
+              Alert.alert('Erro', 'Não foi possível encerrar a sessão.');
+              setSaindo(false);
+          } 
+        },
+      },
+    ])
   }
 
   const nomeExibicao = perfil?.nome || usuarioAtual?.displayName || 'Sem nome';

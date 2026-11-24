@@ -38,9 +38,7 @@ function CustomClienteDrawerContent(props) {
   function handleLogout() {
     Alert.alert('Sair da Conta', 'Tem certeza de que deseja encerrar a sessão?', [
       { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Sair',
-        style: 'destructive',
+      { text: 'Sair', style: 'destructive',
         onPress: async () => {
           try {
             if (navigation && typeof navigation.closeDrawer === 'function') {
@@ -48,9 +46,7 @@ function CustomClienteDrawerContent(props) {
             }
             await signOut(auth);
           } catch (error) {
-            console.error('Erro ao encerrar sessão:', error);
-          } finally {
-            router.replace('/');
+            console.error('Não foi possível encerrar a sessão:', error);
           }
         },
       },

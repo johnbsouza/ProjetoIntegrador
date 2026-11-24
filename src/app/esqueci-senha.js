@@ -1,3 +1,5 @@
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { useState } from 'react';
@@ -5,67 +7,54 @@ import { ActivityIndicator, Alert, StatusBar, StyleSheet, Text, TextInput, Touch
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth } from '../config/firebase';
 
-export default function EsqueciSenhaScreen() {
+export default function EsqueciSenha() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [carregando, setCarregando] = useState(false);
 
-  async function handleRecuperarSenha() {
-    console.log("=== BOTÃO CLICADO ===");
-    console.log("E-mail digitado:", email);
-
+  async function handleEnviarEmail() {
     if (!email.trim()) {
-      Alert.alert('Atenção', 'Por favor, insira o seu e-mail.');
+      Alert.alert('Campo Obrigatório', 'Por favor, digite o seu e-mail.');
       return;
     }
 
     setCarregando(true);
     try {
-      console.log("A tentar ligar ao Firebase Auth para enviar e-mail...");
       await sendPasswordResetEmail(auth, email.trim());
-      console.log("Sucesso no envio do e-mail!");
-      
       Alert.alert(
         'E-mail Enviado',
-        'Verifique a sua caixa de entrada (e a pasta de spam) para redefinir a palavra-passe.',
+        'Enviamos um link de redefinição de senha para o e-mail informado. Verifique também a sua caixa de spam.',
         [{ text: 'OK', onPress: () => router.back() }]
       );
     } catch (error) {
-      console.error('ERRO DETALHADO DO FIREBASE:', error);
-      Alert.alert('Erro no Envio', `Código: ${error.code}\n\nMensagem: ${error.message}`);
+      console.error('Erro ao enviar e-mail de redefinição:', error);
+      let mensagemErro = 'Não foi possível enviar o e-mail de redefinição.';
+
+      switch (error.code) {
+        case 'auth/user-not-found':
+          mensagemErro = 'Nenhuma conta encontrada com este e-mail.';
+          break;
+        case 'auth/invalid-email':
+          mensagemErro = 'O formato do e-mail digitado é inválido.';
+          break;
+        case 'auth/too-many-requests':
+          mensagemErro = 'Muitas tentativas seguidas. Aguarde alguns minutos e tente novamente.';
+          break;
+      }
+
+      Alert.alert('Erro', mensagemErro);
     } finally {
       setCarregando(false);
     }
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#272A27" />
+    <LinearGradient colors={['#1E201E', '#434643', '#1A1C1A']} style={{ flex: 1 }}>
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="light-content" translucent />
 
-      <View style={styles.content}>
-        <Text style={styles.titulo}>Recuperar Senha</Text>
-        <Text style={styles.subtitulo}>Insira o seu e-mail para receber as instruções de redefinição.</Text>
-
-        <TextInput
-          style={styles.input}
-          placeholder="E-mail"
-          placeholderTextColor="rgba(255, 255, 255, 0.4)"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
-
-        <TouchableOpacity
-          style={[styles.botao, carregando && { opacity: 0.7 }]}
-          onPress={handleRecuperarSenha}
-          disabled={carregando}
-        >
-          {carregando ? (
-            <ActivityIndicator color="#1E201E" />
-          ) : (
-            <Text style={styles.textoBotao}>Enviar E-mail</Text>
-          )}
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={20} color="#FF98B9" />
         </TouchableOpacity>
 
         <View style={styles.content}>
@@ -97,8 +86,7 @@ export default function EsqueciSenhaScreen() {
             onPress={handleEnviarEmail}
             disabled={carregando}
           >
-            {carregando ? (
-              <View style={styles.loadingContainer}>
+            {carregando ? ( <View style={styles.loadingContainer}>
                 <ActivityIndicator
                 size='small'
                 color='#1E201E'
@@ -120,32 +108,78 @@ export default function EsqueciSenhaScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#272A27' },
-  content: { flex: 1, justifyContent: 'center', paddingHorizontal: 25 },
-  titulo: { fontSize: 24, color: '#FF98B9', fontWeight: 'bold', marginBottom: 8, textAlign: 'center' },
-  subtitulo: { fontSize: 13, color: 'rgba(255, 255, 255, 0.6)', marginBottom: 25, textAlign: 'center' },
-  input: {
-    backgroundColor: '#383B38',
-    borderRadius: 14,
-    height: 52,
-    paddingHorizontal: 16,
-    color: '#FFF',
-    fontSize: 15,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+  container: {
+    flex: 1,
+    paddingHorizontal: 20
   },
-  botao: {
-    backgroundColor: '#FF98B9',
-    height: 52,
-    borderRadius: 14,
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(89, 89, 89, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#FF98B9',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)'
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 10
+  },
+  iconBox: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: 'rgba(89, 89, 89, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 152, 185, 0.3)'
+  },
+  titulo: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FF98B9',
+    marginBottom: 10
+  },
+  subtitulo: {
+    fontSize: 14,
+    color: 'rgba(209, 209, 209, 0.8)',
+    textAlign: 'center',
+    marginBottom: 30,
+    lineHeight: 20
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(89, 89, 89, 0.5)',
+    borderRadius: 14,
+    paddingHorizontal: 15,
+    height: 55,
+    width: '100%',
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)'
+  },
+  inputIcon: {
+    marginRight: 10
+  },
+  input: {
+    flex: 1,
+    color: '#FFF',
+    fontSize: 15
+  },
+  botaoEnviar: {
+    backgroundColor: '#FF98B9',
+    height: 55,
+    borderRadius: 14,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center'
   },
   botaoDesativado: {
     opacity: 0.6
