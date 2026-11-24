@@ -20,24 +20,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth, db } from '../../config/firebase';
-
-const COLORS = {
-  bgPrimary: '#434643',
-  bgSurface: '#595959',
-  bgElevated: '#383B38',
-  bgDark: '#2B2D2B',
-  borderSubtle: 'rgba(255,255,255,0.08)',
-  accent: '#FF98B9',
-  accentSoft: 'rgba(255, 152, 185, 0.14)',
-  accentBorder: 'rgba(255, 152, 185, 0.35)',
-  textPrimary: '#FFFFFF',
-  textSecondary: '#D1D1D1',
-  textMuted: '#A0A3A0',
-  textOnAccent: '#1E201E',
-  success: '#A5D6A7',
-  successSoft: 'rgba(165, 214, 167, 0.14)',
-  info: '#90CAF9',
-};
+import { useAcessibilidade } from '../../context/AcessibilidadeContext';
 
 const COMISSAO_PADRAO_PERCENTUAL = 50;
 
@@ -56,6 +39,7 @@ function normalizarStatus(status) {
 function extrairPercentualComissao(dadosUsuario) {
   if (!dadosUsuario) return COMISSAO_PADRAO_PERCENTUAL;
   const bruto =
+    dadosUsuario.comissaoPorcentagem ??
     dadosUsuario.percentualComissao ??
     dadosUsuario.comissao ??
     dadosUsuario.porcentagemComissao ??
@@ -74,6 +58,7 @@ function extrairPercentualComissao(dadosUsuario) {
 
 export default function GanhosComissoesScreen() {
   const router = useRouter();
+  const { tema, config } = useAcessibilidade();
   const usuarioAtual = auth.currentUser;
 
   const [nomeProfissional, setNomeProfissional] = useState(
@@ -219,52 +204,143 @@ export default function GanhosComissoesScreen() {
     const dataExibicao = item.dataFormatada || item.data || item.dataAgendamento || '';
 
     return (
-      <View style={styles.cardItem}>
+      <View
+        accessible
+        accessibilityLabel={`${nomeServico}, valor bruto ${formatarMoeda(precoItem)}, cliente ${nomeCliente}${dataExibicao ? `, em ${dataExibicao}` : ''}${item.horario ? ` às ${item.horario}` : ''}. Comissão de ${percentualComissao}%: ${formatarMoeda(comissaoItem)}`}
+        style={[
+          styles.cardItem,
+          {
+            backgroundColor: tema.bgSurface,
+            borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+          },
+        ]}
+      >
         <View style={styles.cardTopo}>
-          <Text style={styles.servicoNome}>{nomeServico}</Text>
-          <Text style={styles.precoBruto}>{formatarMoeda(precoItem)}</Text>
+          <Text
+            style={[
+              styles.servicoNome,
+              { color: tema.textPrimary, fontSize: tema.fontSize(15) },
+            ]}
+          >
+            {nomeServico}
+          </Text>
+          <Text
+            style={[
+              styles.precoBruto,
+              { color: tema.textSecondary, fontSize: tema.fontSize(14) },
+            ]}
+          >
+            {formatarMoeda(precoItem)}
+          </Text>
         </View>
 
-        <Text style={styles.detalheTexto}>
+        <Text
+          style={[
+            styles.detalheTexto,
+            { color: tema.textMuted, fontSize: tema.fontSize(12) },
+          ]}
+        >
           Cliente: {nomeCliente}
           {dataExibicao ? ` • ${dataExibicao}` : ''}
           {item.horario ? ` às ${item.horario}` : ''}
         </Text>
 
-        <View style={styles.cardRodape}>
-          <Text style={styles.comissaoLabel}>
+        <View
+          style={[
+            styles.cardRodape,
+            { borderTopColor: tema.borderSubtle },
+          ]}
+        >
+          <Text
+            style={[
+              styles.comissaoLabel,
+              { color: tema.textSecondary, fontSize: tema.fontSize(12) },
+            ]}
+          >
             Comissão ({percentualComissao}%):
           </Text>
-          <Text style={styles.comissaoValor}>{formatarMoeda(comissaoItem)}</Text>
+          <Text
+            style={[
+              styles.comissaoValor,
+              { color: tema.success, fontSize: tema.fontSize(14) },
+            ]}
+          >
+            {formatarMoeda(comissaoItem)}
+          </Text>
         </View>
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.topBar}>
+    <SafeAreaView style={[styles.container, { backgroundColor: tema.bgPrimary }]}>
+      <View
+        style={[
+          styles.topBar,
+          {
+            backgroundColor: tema.bgSurface,
+            borderBottomColor: tema.borderSubtle,
+          },
+        ]}
+      >
         <TouchableOpacity
+          hitSlop={tema.hitSlopPadrao}
+          accessibilityRole="button"
+          accessibilityLabel="Voltar para a tela anterior"
           onPress={() => router.back()}
-          style={styles.backButton}
-          accessibilityLabel="Voltar"
+          style={[
+            styles.backButton,
+            {
+              minWidth: tema.minTouchHeight,
+              minHeight: tema.minTouchHeight,
+              alignItems: 'center',
+              justifyContent: 'center',
+            },
+          ]}
         >
-          <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
+          <Ionicons name="arrow-back" size={24} color={tema.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.topTitle}>Ganhos e Comissões</Text>
-        <View style={{ width: 24 }} />
+        <Text
+          accessibilityRole="header"
+          style={[
+            styles.topTitle,
+            { color: tema.textPrimary, fontSize: tema.fontSize(18) },
+          ]}
+        >
+          Ganhos e Comissões
+        </Text>
+        <View style={{ width: Math.max(24, tema.minTouchHeight) }} />
       </View>
 
       {carregando ? (
         <View style={styles.centro}>
-          <ActivityIndicator size="large" color={COLORS.accent} />
-          <Text style={styles.estadoTexto}>Calculando suas comissões...</Text>
+          <ActivityIndicator size="large" color={tema.accent} />
+          <Text
+            style={[
+              styles.estadoTexto,
+              { color: tema.textSecondary, fontSize: tema.fontSize(14) },
+            ]}
+          >
+            Calculando suas comissões...
+          </Text>
         </View>
       ) : !usuarioAtual ? (
         <View style={styles.centro}>
-          <Ionicons name="lock-closed-outline" size={44} color={COLORS.textMuted} />
-          <Text style={styles.estadoTitulo}>Sessão não encontrada</Text>
-          <Text style={styles.estadoTexto}>
+          <Ionicons name="lock-closed-outline" size={44} color={tema.textMuted} accessible={false} />
+          <Text
+            style={[
+              styles.estadoTitulo,
+              { color: tema.textPrimary, fontSize: tema.fontSize(17) },
+            ]}
+          >
+            Sessão não encontrada
+          </Text>
+          <Text
+            style={[
+              styles.estadoTexto,
+              { color: tema.textSecondary, fontSize: tema.fontSize(14) },
+            ]}
+          >
             Faça login na conta profissional para visualizar seus ganhos.
           </Text>
         </View>
@@ -273,33 +349,80 @@ export default function GanhosComissoesScreen() {
           data={servicosConcluidos}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          contentContainerStyle={styles.listaContent}
+          contentContainerStyle={[
+            styles.listaContent,
+            {
+              paddingBottom: 88 + tema.espacoExtra,
+              gap: 12 + tema.espacoExtra,
+            },
+          ]}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
               refreshing={atualizando}
               onRefresh={handleRefresh}
-              tintColor={COLORS.accent}
-              colors={[COLORS.accent]}
+              tintColor={tema.accent}
+              colors={[tema.accent]}
             />
           }
           ListHeaderComponent={
             <View style={styles.headerBloco}>
-              <View style={styles.destaqueCard}>
+              <View
+                accessible
+                accessibilityLabel={`Sua comissão a receber: ${formatarMoeda(resumoFinanceiro.valorComissao)}, ${percentualComissao}% de comissão, ${nomeProfissional}, ${resumoFinanceiro.quantidade} ${resumoFinanceiro.quantidade === 1 ? 'serviço concluído' : 'serviços concluídos'}`}
+                style={[
+                  styles.destaqueCard,
+                  {
+                    backgroundColor: tema.bgSurface,
+                    borderColor: tema.accentBorder,
+                    marginBottom: 12 + tema.espacoExtra,
+                  },
+                ]}
+              >
                 <View style={styles.destaqueTopo}>
-                  <Text style={styles.destaqueLabel}>Sua Comissão a Receber</Text>
-                  <View style={styles.badgePercentual}>
-                    <Text style={styles.badgePercentualTexto}>
+                  <Text
+                    style={[
+                      styles.destaqueLabel,
+                      { color: tema.textSecondary, fontSize: tema.fontSize(13) },
+                    ]}
+                  >
+                    Sua Comissão a Receber
+                  </Text>
+                  <View
+                    style={[
+                      styles.badgePercentual,
+                      {
+                        backgroundColor: tema.accentSoft,
+                        borderColor: tema.accentBorder,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.badgePercentualTexto,
+                        { color: tema.accent, fontSize: tema.fontSize(11) },
+                      ]}
+                    >
                       {percentualComissao}% de comissão
                     </Text>
                   </View>
                 </View>
 
-                <Text style={styles.valorDestaque}>
+                <Text
+                  style={[
+                    styles.valorDestaque,
+                    { color: tema.accent, fontSize: tema.fontSize(30) },
+                  ]}
+                >
                   {formatarMoeda(resumoFinanceiro.valorComissao)}
                 </Text>
 
-                <Text style={styles.profissionalSub}>
+                <Text
+                  style={[
+                    styles.profissionalSub,
+                    { color: tema.textSecondary, fontSize: tema.fontSize(12) },
+                  ]}
+                >
                   {nomeProfissional} • {resumoFinanceiro.quantidade}{' '}
                   {resumoFinanceiro.quantidade === 1
                     ? 'serviço concluído'
@@ -307,31 +430,100 @@ export default function GanhosComissoesScreen() {
                 </Text>
               </View>
 
-              <View style={styles.metricasRow}>
-                <View style={styles.metricaCard}>
-                  <Text style={styles.metricaLabel}>Total Concluído</Text>
-                  <Text style={styles.metricaValor}>
+              <View
+                style={[
+                  styles.metricasRow,
+                  { gap: 10 + tema.espacoExtra, marginBottom: 18 + tema.espacoExtra },
+                ]}
+              >
+                <View
+                  accessible
+                  accessibilityLabel={`Total Concluído: ${formatarMoeda(resumoFinanceiro.totalBruto)}`}
+                  style={[
+                    styles.metricaCard,
+                    {
+                      backgroundColor: tema.bgElevated,
+                      borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.metricaLabel,
+                      { color: tema.textSecondary, fontSize: tema.fontSize(12) },
+                    ]}
+                  >
+                    Total Concluído
+                  </Text>
+                  <Text
+                    style={[
+                      styles.metricaValor,
+                      { color: tema.textPrimary, fontSize: tema.fontSize(16) },
+                    ]}
+                  >
                     {formatarMoeda(resumoFinanceiro.totalBruto)}
                   </Text>
                 </View>
 
-                <View style={styles.metricaCard}>
-                  <Text style={styles.metricaLabel}>Repasse Salão</Text>
-                  <Text style={styles.metricaValorSecundario}>
+                <View
+                  accessible
+                  accessibilityLabel={`Repasse Salão: ${formatarMoeda(resumoFinanceiro.parteSalao)}`}
+                  style={[
+                    styles.metricaCard,
+                    {
+                      backgroundColor: tema.bgElevated,
+                      borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.metricaLabel,
+                      { color: tema.textSecondary, fontSize: tema.fontSize(12) },
+                    ]}
+                  >
+                    Repasse Salão
+                  </Text>
+                  <Text
+                    style={[
+                      styles.metricaValorSecundario,
+                      { color: tema.info, fontSize: tema.fontSize(16) },
+                    ]}
+                  >
                     {formatarMoeda(resumoFinanceiro.parteSalao)}
                   </Text>
                 </View>
               </View>
 
-              <Text style={styles.secaoTitulo}>Serviços Concluídos</Text>
+              <Text
+                accessibilityRole="header"
+                style={[
+                  styles.secaoTitulo,
+                  { color: tema.accent, fontSize: tema.fontSize(15) },
+                ]}
+              >
+                Serviços Concluídos
+              </Text>
             </View>
           }
           ListEmptyComponent={
             <View style={styles.centro}>
-              <Ionicons name="wallet-outline" size={48} color={COLORS.textMuted} />
-              <Text style={styles.estadoTitulo}>Nenhum serviço concluído ainda</Text>
-              <Text style={styles.estadoTexto}>
-                Quando você concluir atendimentos na agenda (✔️), o valor e a sua comissão
+              <Ionicons name="wallet-outline" size={48} color={tema.textMuted} accessible={false} />
+              <Text
+                style={[
+                  styles.estadoTitulo,
+                  { color: tema.textPrimary, fontSize: tema.fontSize(17) },
+                ]}
+              >
+                Nenhum serviço concluído ainda
+              </Text>
+              <Text
+                style={[
+                  styles.estadoTexto,
+                  { color: tema.textSecondary, fontSize: tema.fontSize(14) },
+                ]}
+              >
+                Quando você concluir atendimentos na agenda, o valor e a sua comissão
                 aparecerão aqui automaticamente.
               </Text>
             </View>
@@ -345,7 +537,6 @@ export default function GanhosComissoesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bgPrimary,
   },
   topBar: {
     flexDirection: 'row',
@@ -354,34 +545,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 14,
-    backgroundColor: COLORS.bgSurface,
     borderBottomWidth: 1,
-    borderBottomColor: '#6B6E6B',
   },
   topTitle: {
-    fontSize: 18,
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
   },
   backButton: {
     padding: 4,
   },
   listaContent: {
     padding: 20,
-    paddingBottom: 36,
-    gap: 12,
     flexGrow: 1,
   },
   headerBloco: {
     marginBottom: 4,
   },
   destaqueCard: {
-    backgroundColor: COLORS.bgSurface,
     borderRadius: 16,
     padding: 18,
     borderWidth: 1,
-    borderColor: COLORS.accentBorder,
-    marginBottom: 12,
   },
   destaqueTopo: {
     flexDirection: 'row',
@@ -391,72 +573,47 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   destaqueLabel: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
     fontWeight: '600',
   },
   badgePercentual: {
-    backgroundColor: COLORS.accentSoft,
     borderWidth: 1,
-    borderColor: COLORS.accentBorder,
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderRadius: 12,
   },
   badgePercentualTexto: {
-    color: COLORS.accent,
-    fontSize: 11,
     fontWeight: 'bold',
   },
   valorDestaque: {
-    color: COLORS.accent,
-    fontSize: 30,
     fontWeight: 'bold',
     marginBottom: 4,
   },
-  profissionalSub: {
-    color: COLORS.textSecondary,
-    fontSize: 12,
-  },
+  profissionalSub: {},
   metricasRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 18,
   },
   metricaCard: {
     flex: 1,
-    backgroundColor: COLORS.bgElevated,
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: COLORS.borderSubtle,
   },
   metricaLabel: {
-    color: COLORS.textSecondary,
-    fontSize: 12,
     marginBottom: 4,
   },
   metricaValor: {
-    color: COLORS.textPrimary,
-    fontSize: 16,
     fontWeight: 'bold',
   },
   metricaValorSecundario: {
-    color: COLORS.info,
-    fontSize: 16,
     fontWeight: 'bold',
   },
   secaoTitulo: {
-    color: COLORS.accent,
-    fontSize: 15,
     fontWeight: 'bold',
   },
   cardItem: {
-    backgroundColor: COLORS.bgSurface,
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: COLORS.borderSubtle,
   },
   cardTopo: {
     flexDirection: 'row',
@@ -466,19 +623,13 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   servicoNome: {
-    color: COLORS.textPrimary,
-    fontSize: 15,
     fontWeight: 'bold',
     flex: 1,
   },
   precoBruto: {
-    color: COLORS.textSecondary,
-    fontSize: 14,
     fontWeight: 'bold',
   },
   detalheTexto: {
-    color: COLORS.textMuted,
-    fontSize: 12,
     marginBottom: 10,
   },
   cardRodape: {
@@ -487,16 +638,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: COLORS.borderSubtle,
   },
   comissaoLabel: {
-    color: COLORS.textSecondary,
-    fontSize: 12,
     fontWeight: '600',
   },
   comissaoValor: {
-    color: COLORS.success,
-    fontSize: 14,
     fontWeight: 'bold',
   },
   centro: {
@@ -508,14 +654,10 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   estadoTitulo: {
-    color: COLORS.textPrimary,
-    fontSize: 17,
     fontWeight: 'bold',
     textAlign: 'center',
   },
   estadoTexto: {
-    color: COLORS.textSecondary,
-    fontSize: 14,
     textAlign: 'center',
     lineHeight: 20,
   },

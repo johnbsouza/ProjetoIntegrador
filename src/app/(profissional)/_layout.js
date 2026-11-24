@@ -1,22 +1,36 @@
 import { Ionicons } from '@expo/vector-icons';
-import { usePathname, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Drawer } from 'expo-router/drawer';
 import { signOut } from 'firebase/auth';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import BotaoAcessibilidade from '../../components/BotaoAcessibilidade';
 import { auth } from '../../config/firebase';
+import { useAcessibilidade } from '../../context/AcessibilidadeContext';
 
-function CustomDrawerProfissional(props) {
+const MENU_PRINCIPAL_PROFISSIONAL = [
+  { name: 'index', label: 'Minha Agenda', icon: 'calendar-outline' },
+  { name: 'ganhos', label: 'Minhas Comissões', icon: 'wallet-outline' },
+  { name: 'perfil', label: 'Meu Perfil', icon: 'person-circle-outline' },
+];
+
+const ROTAS_SECUNDARIAS_PROFISSIONAL = [
+  'agenda',
+  'editar-perfil',
+];
+
+function CustomProfissionalDrawerContent(props) {
   const router = useRouter();
-  const pathname = usePathname();
-
-  const menuItems = [
-    { label: 'Minha Agenda', route: '/(profissional)', icon: 'calendar-outline' },
-    { label: 'Minhas Comissões', route: '/(profissional)/ganhos', icon: 'wallet-outline' },
-    { label: 'Meu Perfil', route: '/(profissional)/perfil', icon: 'person-outline' },
-  ];
+  const { tema, config } = useAcessibilidade();
+  const { state, navigation } = props;
+  const rotaAtual = state?.routes?.[state.index]?.name;
 
   function handleLogout() {
     Alert.alert('Sair da Conta', 'Tem certeza de que deseja encerrar a sessão?', [
@@ -26,8 +40,8 @@ function CustomDrawerProfissional(props) {
         style: 'destructive',
         onPress: async () => {
           try {
-            if (props?.navigation) {
-              props.navigation.closeDrawer();
+            if (navigation && typeof navigation.closeDrawer === 'function') {
+              navigation.closeDrawer();
             }
             await signOut(auth);
           } catch (error) {
@@ -39,145 +53,179 @@ function CustomDrawerProfissional(props) {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#595959' }}>
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
-        <View style={styles.drawerHeader}>
-          <View style={styles.profileCircle}>
-            <Ionicons name="sparkles" size={36} color="#1E201E" />
-          </View>
-          <Text style={styles.drawerTitle}>Olá, Profissional!</Text>
-          <Text style={styles.drawerSubtitle}>Painel de Gestão</Text>
-        </View>
+    <View style={[styles.drawerContainer, { backgroundColor: tema.bgPrimary }]}>
+      <View
+        style={[
+          styles.drawerHeader,
+          {
+            backgroundColor: tema.bgSurface,
+            borderBottomColor: tema.borderSubtle,
+          },
+        ]}
+      >
+        <Text style={[styles.brandTitle, { color: tema.accent, fontSize: tema.fontSize(16) }]}>
+          Lirium Esmalteria
+        </Text>
+        {!config.modoCalmo && (
+          <Text style={[styles.brandSub, { color: tema.textMuted, fontSize: tema.fontSize(12) }]}>
+            Painel Profissional
+          </Text>
+        )}
+      </View>
 
-        <View style={{ flex: 1, paddingVertical: 10, paddingHorizontal: 10 }}>
-          {menuItems.map((item, index) => {
-            const isActive = pathname === item.route;
-            return (
-              <TouchableOpacity
-                key={index}
-                style={[styles.menuItem, isActive && styles.menuItemActive]}
-                onPress={() => router.push(item.route)}
+      <ScrollView
+        contentContainerStyle={[styles.scrollContent, { gap: 4 + tema.espacoExtra }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {MENU_PRINCIPAL_PROFISSIONAL.map((item) => {
+          const ativa = rotaAtual === item.name;
+          return (
+            <TouchableOpacity
+              key={item.name}
+              hitSlop={tema.hitSlopPadrao}
+              accessibilityRole="button"
+              accessibilityLabel={item.label}
+              accessibilityState={{ selected: ativa }}
+              style={[
+                styles.itemBtn,
+                {
+                  minHeight: tema.minTouchHeight,
+                  backgroundColor: ativa ? tema.accent : 'transparent',
+                  borderColor: config.altoContraste ? tema.borderSubtle : 'transparent',
+                },
+              ]}
+              onPress={() => {
+                navigation.navigate(item.name);
+                if (typeof navigation.closeDrawer === 'function') {
+                  navigation.closeDrawer();
+                }
+              }}
+            >
+              <Ionicons
+                name={item.icon}
+                size={20}
+                color={ativa ? tema.textOnAccent : tema.textSecondary}
+              />
+              <Text
+                style={[
+                  styles.itemTexto,
+                  {
+                    color: ativa ? tema.textOnAccent : tema.textSecondary,
+                    fontSize: tema.fontSize(14),
+                    fontWeight: ativa ? 'bold' : '600',
+                  },
+                ]}
               >
-                <Ionicons name={item.icon} size={22} color={isActive ? '#1E201E' : '#D1D1D1'} />
-                <Text style={[styles.menuText, isActive && styles.menuTextActive]}>
-                  {item.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-
-          <TouchableOpacity
-            style={[styles.menuItem, { marginTop: 10 }]}
-            onPress={handleLogout}
-          >
-            <Ionicons name="log-out-outline" size={22} color="#FF4C4C" />
-            <Text style={[styles.menuText, { color: '#FF4C4C', fontWeight: 'bold' }]}>
-              Sair da Conta
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.drawerFooter}>
-          <View style={styles.linhaSeparadora} />
-          <Text style={styles.footerText}>Esmalteria App</Text>
-          <Text style={styles.footerSubText}>Versão 1.0.0</Text>
-        </View>
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </ScrollView>
-    </SafeAreaView>
+
+      <TouchableOpacity
+        hitSlop={tema.hitSlopPadrao}
+        accessibilityRole="button"
+        accessibilityLabel="Sair da conta"
+        style={[
+          styles.logoutBtn,
+          {
+            borderTopColor: tema.borderSubtle,
+            minHeight: tema.minTouchHeight + 12,
+          },
+        ]}
+        onPress={handleLogout}
+      >
+        <Ionicons name="log-out-outline" size={20} color={tema.danger} />
+        <Text style={[styles.logoutTexto, { color: tema.danger, fontSize: tema.fontSize(14) }]}>
+          Sair da conta
+        </Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
 export default function ProfissionalLayout() {
+  const { tema } = useAcessibilidade();
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Drawer
-        drawerContent={(props) => <CustomDrawerProfissional {...props} />}
+        drawerContent={(props) => <CustomProfissionalDrawerContent {...props} />}
         screenOptions={{
-          headerStyle: { backgroundColor: '#434643', shadowColor: 'transparent', elevation: 0 },
-          headerTintColor: '#FF98B9', 
-          headerTitleAlign: 'center',
-          drawerStyle: { backgroundColor: '#595959', width: 280 },
+          headerShown: false,
+          drawerStyle: {
+            backgroundColor: tema.bgPrimary,
+            width: 280,
+          },
         }}
       >
-        <Drawer.Screen name="index" options={{ headerTitle: 'Minha Agenda' }} />
-        <Drawer.Screen name="ganhos" options={{ headerTitle: 'Comissões' }} />
-        <Drawer.Screen name="perfil" options={{ headerTitle: 'Meu Perfil' }} />
-        <Drawer.Screen name="editar-perfil" options={{ drawerItemStyle: { display: 'none' }, headerTitle: 'Editar Perfil' }} />
-        <Drawer.Screen name="agenda" options={{ drawerItemStyle: { display: 'none' } }} />
+        {MENU_PRINCIPAL_PROFISSIONAL.map((item) => (
+          <Drawer.Screen
+            key={item.name}
+            name={item.name}
+            options={{ title: item.label }}
+          />
+        ))}
+
+        {ROTAS_SECUNDARIAS_PROFISSIONAL.map((routeName) => (
+          <Drawer.Screen
+            key={routeName}
+            name={routeName}
+            options={{
+              drawerItemStyle: { display: 'none' },
+              href: null,
+            }}
+          />
+        ))}
       </Drawer>
-      
+
       <BotaoAcessibilidade />
     </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
+  drawerContainer: {
+    flex: 1,
+  },
   drawerHeader: {
-    padding: 25,
+    paddingHorizontal: 20,
+    paddingTop: 28,
+    paddingBottom: 18,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
-    alignItems: 'center',
-    marginBottom: 10,
   },
-  profileCircle: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: '#FF98B9',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  drawerTitle: {
-    color: '#FFF',
-    fontSize: 18,
+  brandTitle: {
     fontWeight: 'bold',
   },
-  drawerSubtitle: {
-    color: '#FF98B9',
-    fontSize: 14,
-    marginTop: 3,
+  brandSub: {
+    marginTop: 2,
   },
-  menuItem: {
+  scrollContent: {
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+  },
+  itemBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    borderRadius: 10,
-    marginBottom: 5,
+    gap: 12,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    borderRadius: 24,
+    borderWidth: 1,
   },
-  menuItemActive: {
-    backgroundColor: '#FF98B9',
+  itemTexto: {
+    flex: 1,
   },
-  menuText: {
-    color: '#D1D1D1',
-    fontSize: 15,
-    fontWeight: '600',
-    marginLeft: 15,
-  },
-  menuTextActive: {
-    color: '#1E201E',
-    fontWeight: 'bold',
-  },
-  drawerFooter: {
-    padding: 20,
-    paddingBottom: 30,
+  logoutBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderTopWidth: 1,
   },
-  linhaSeparadora: {
-    width: '80%',
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    marginBottom: 15,
-  },
-  footerText: {
-    color: '#D1D1D1',
+  logoutTexto: {
     fontWeight: 'bold',
-    fontSize: 14,
-  },
-  footerSubText: {
-    color: 'rgba(209, 209, 209, 0.5)',
-    fontSize: 12,
-    marginTop: 2,
   },
 });

@@ -1,59 +1,50 @@
 import { Ionicons } from '@expo/vector-icons';
-import { usePathname, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Drawer } from 'expo-router/drawer';
 import { signOut } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { useEffect, useState } from 'react';
-import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import BotaoAcessibilidade from '../../components/BotaoAcessibilidade';
-import { auth, db } from '../../config/firebase';
+import { auth } from '../../config/firebase';
+import { useAcessibilidade } from '../../context/AcessibilidadeContext';
 
-function CustomDrawerCliente(props) {
+const MENU_PRINCIPAL_CLIENTE = [
+  { name: 'index', label: 'Início', icon: 'home-outline' },
+  { name: 'explorar', label: 'Explorar Serviços', icon: 'sparkles-outline' },
+  { name: 'agenda', label: 'Meus Agendamentos', icon: 'calendar-outline' },
+  { name: 'pacotes', label: 'Pacotes Promocionais', icon: 'gift-outline' },
+  { name: 'notificacoes', label: 'Notificações', icon: 'notifications-outline' },
+  { name: 'perfil', label: 'Meu Perfil', icon: 'person-circle-outline' },
+];
+
+const ROTAS_SECUNDARIAS_CLIENTE = [
+  'agendar',
+  'editar-perfil',
+];
+
+function CustomClienteDrawerContent(props) {
   const router = useRouter();
-  const pathname = usePathname();
-  const [fotoPerfil, setFotoPerfil] = useState(null);
-  const [nomeCliente, setNomeCliente] = useState('Cliente');
-
-  useEffect(() => {
-    async function carregarFotoDrawer() {
-      const user = auth.currentUser;
-      if (user) {
-        try {
-          const userDoc = await getDoc(doc(db, 'usuarios', user.uid));
-          if (userDoc.exists()) {
-            const data = userDoc.data();
-            if (data.fotoPerfil) setFotoPerfil(data.fotoPerfil);
-            if (data.nome) setNomeCliente(data.nome);
-          }
-        } catch (error) {
-          console.error("Erro ao carregar foto do drawer:", error);
-        }
-      }
-    }
-    carregarFotoDrawer();
-  }, []);
-
-  const menuItems = [
-    { label: 'Início', route: '/(cliente)', icon: 'home-outline' },
-    { label: 'Explorar Serviços', route: '/(cliente)/explorar', icon: 'search-outline' },
-    { label: 'Pacotes Promocionais', route: '/(cliente)/pacotes', icon: 'gift-outline' },
-    { label: 'Meus Agendamentos', route: '/(cliente)/agenda', icon: 'calendar-outline' },
-    { label: 'Notificações', route: '/(cliente)/notificacoes', icon: 'notifications-outline' },
-    { label: 'Meu Perfil', route: '/(cliente)/perfil', icon: 'person-outline' },
-  ];
+  const { tema, config } = useAcessibilidade();
+  const { state, navigation } = props;
+  const rotaAtual = state?.routes?.[state.index]?.name;
 
   function handleLogout() {
-    Alert.alert('Sair da Conta', 'Tem certeza de que deseja sair?', [
+    Alert.alert('Sair da Conta', 'Tem certeza de que deseja encerrar a sessão?', [
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Sair',
         style: 'destructive',
         onPress: async () => {
           try {
-            if (props?.navigation) {
-              props.navigation.closeDrawer();
+            if (navigation && typeof navigation.closeDrawer === 'function') {
+              navigation.closeDrawer();
             }
             await signOut(auth);
           } catch (error) {
@@ -66,116 +57,180 @@ function CustomDrawerCliente(props) {
     ]);
   }
 
-  const inicial = nomeCliente ? nomeCliente.charAt(0).toUpperCase() : 'C';
-
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#595959' }}>
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
-        <View style={styles.drawerHeader}>
-          <View style={styles.profileCircle}>
-            {fotoPerfil ? (
-              <Image source={{ uri: fotoPerfil }} style={styles.avatarImage} />
-            ) : (
-              <Text style={styles.avatarText}>{inicial}</Text>
-            )}
-          </View>
-          <Text style={styles.drawerTitle}>Olá, {nomeCliente.split(' ')[0]}!</Text>
-          <Text style={styles.drawerSubtitle}>Área Exclusiva</Text>
-        </View>
+    <View style={[styles.drawerContainer, { backgroundColor: tema.bgPrimary }]}>
+      <View
+        style={[
+          styles.drawerHeader,
+          {
+            backgroundColor: tema.bgSurface,
+            borderBottomColor: tema.borderSubtle,
+          },
+        ]}
+      >
+        <Text style={[styles.brandTitle, { color: tema.accent, fontSize: tema.fontSize(16) }]}>
+          Lirium Esmalteria & Spa
+        </Text>
+        {!config.modoCalmo && (
+          <Text style={[styles.brandSub, { color: tema.textMuted, fontSize: tema.fontSize(12) }]}>
+            Área da Cliente
+          </Text>
+        )}
+      </View>
 
-        <View style={{ flex: 1, paddingVertical: 10, paddingHorizontal: 10 }}>
-          {menuItems.map((item, index) => {
-            const isActive = pathname === item.route;
-            return (
-              <TouchableOpacity
-                key={index}
-                style={[styles.menuItem, isActive && styles.menuItemActive]}
-                onPress={() => router.push(item.route)}
+      <ScrollView
+        contentContainerStyle={[styles.scrollContent, { gap: 4 + tema.espacoExtra }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {MENU_PRINCIPAL_CLIENTE.map((item) => {
+          const ativa = rotaAtual === item.name;
+          return (
+            <TouchableOpacity
+              key={item.name}
+              hitSlop={tema.hitSlopPadrao}
+              accessibilityRole="button"
+              accessibilityLabel={item.label}
+              accessibilityState={{ selected: ativa }}
+              style={[
+                styles.itemBtn,
+                {
+                  minHeight: tema.minTouchHeight,
+                  backgroundColor: ativa ? tema.accent : 'transparent',
+                  borderColor: config.altoContraste ? tema.borderSubtle : 'transparent',
+                },
+              ]}
+              onPress={() => {
+                navigation.navigate(item.name);
+                if (typeof navigation.closeDrawer === 'function') {
+                  navigation.closeDrawer();
+                }
+              }}
+            >
+              <Ionicons
+                name={item.icon}
+                size={20}
+                color={ativa ? tema.textOnAccent : tema.textSecondary}
+              />
+              <Text
+                style={[
+                  styles.itemTexto,
+                  {
+                    color: ativa ? tema.textOnAccent : tema.textSecondary,
+                    fontSize: tema.fontSize(14),
+                    fontWeight: ativa ? 'bold' : '600',
+                  },
+                ]}
               >
-                <Ionicons name={item.icon} size={22} color={isActive ? '#1E201E' : '#D1D1D1'} />
-                <Text style={[styles.menuText, isActive && styles.menuTextActive]}>
-                  {item.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-
-          <TouchableOpacity
-            style={[styles.menuItem, { marginTop: 10 }]}
-            onPress={handleLogout}
-          >
-            <Ionicons name="log-out-outline" size={22} color="#FF4C4C" />
-            <Text style={[styles.menuText, { color: '#FF4C4C', fontWeight: 'bold' }]}>
-              Sair da Conta
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.drawerFooter}>
-          <View style={styles.linhaSeparadora} />
-          <Text style={styles.footerText}>Lirium Esmalteria</Text>
-          <Text style={styles.footerSubText}>Versão 1.0.0</Text>
-        </View>
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </ScrollView>
-    </SafeAreaView>
+
+      <TouchableOpacity
+        hitSlop={tema.hitSlopPadrao}
+        accessibilityRole="button"
+        accessibilityLabel="Sair da conta"
+        style={[
+          styles.logoutBtn,
+          {
+            borderTopColor: tema.borderSubtle,
+            minHeight: tema.minTouchHeight + 12,
+          },
+        ]}
+        onPress={handleLogout}
+      >
+        <Ionicons name="log-out-outline" size={20} color={tema.danger} />
+        <Text style={[styles.logoutTexto, { color: tema.danger, fontSize: tema.fontSize(14) }]}>
+          Sair da conta
+        </Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
 export default function ClienteLayout() {
+  const { tema } = useAcessibilidade();
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Drawer
-        drawerContent={(props) => <CustomDrawerCliente {...props} />}
+        drawerContent={(props) => <CustomClienteDrawerContent {...props} />}
         screenOptions={{
-          headerStyle: { backgroundColor: '#434643', shadowColor: 'transparent', elevation: 0 },
-          headerTintColor: '#FF98B9', 
-          headerTitleAlign: 'center',
-          drawerStyle: { backgroundColor: '#595959', width: 280 },
+          headerShown: false,
+          drawerStyle: {
+            backgroundColor: tema.bgPrimary,
+            width: 280,
+          },
         }}
       >
-        <Drawer.Screen name="index" options={{ headerTitle: 'Área do Cliente' }} />
-        <Drawer.Screen name="explorar" options={{ headerTitle: 'Serviços' }} />
-        <Drawer.Screen name="pacotes" options={{ headerTitle: 'Pacotes Promocionais' }} />
-        <Drawer.Screen name="agenda" options={{ headerTitle: 'Meus Agendamentos' }} />
-        <Drawer.Screen name="notificacoes" options={{ headerTitle: 'Notificações' }} />
-        <Drawer.Screen name="perfil" options={{ headerTitle: 'Meu Perfil' }} />
-        <Drawer.Screen name="editar-perfil" options={{ drawerItemStyle: { display: 'none' }, headerTitle: 'Editar Perfil' }} />
-        <Drawer.Screen name="agendar" options={{ drawerItemStyle: { display: 'none' }, headerTitle: 'Agendar Horário' }} />
+        {MENU_PRINCIPAL_CLIENTE.map((item) => (
+          <Drawer.Screen
+            key={item.name}
+            name={item.name}
+            options={{ title: item.label }}
+          />
+        ))}
+
+        {ROTAS_SECUNDARIAS_CLIENTE.map((routeName) => (
+          <Drawer.Screen
+            key={routeName}
+            name={routeName}
+            options={{
+              drawerItemStyle: { display: 'none' },
+              href: null,
+            }}
+          />
+        ))}
       </Drawer>
-      
+
       <BotaoAcessibilidade />
     </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
+  drawerContainer: {
+    flex: 1,
+  },
   drawerHeader: {
-    padding: 25,
+    paddingHorizontal: 20,
+    paddingTop: 28,
+    paddingBottom: 18,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
-    alignItems: 'center',
-    marginBottom: 10,
   },
-  profileCircle: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: '#FF98B9',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 15,
-    overflow: 'hidden',
+  brandTitle: {
+    fontWeight: 'bold',
   },
-  avatarImage: { width: 70, height: 70, borderRadius: 35 },
-  avatarText: { fontSize: 26, fontWeight: 'bold', color: '#1E201E' },
-  drawerTitle: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
-  drawerSubtitle: { color: '#FF98B9', fontSize: 14, marginTop: 3 },
-  menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 15, borderRadius: 10, marginBottom: 5 },
-  menuItemActive: { backgroundColor: '#FF98B9' },
-  menuText: { color: '#D1D1D1', fontSize: 15, fontWeight: '600', marginLeft: 15 },
-  menuTextActive: { color: '#1E201E', fontWeight: 'bold' },
-  drawerFooter: { padding: 20, paddingBottom: 30, alignItems: 'center' },
-  linhaSeparadora: { width: '80%', height: 1, backgroundColor: 'rgba(255, 255, 255, 0.1)', marginBottom: 15 },
-  footerText: { color: '#D1D1D1', fontWeight: 'bold', fontSize: 14 },
-  footerSubText: { color: 'rgba(209, 209, 209, 0.5)', fontSize: 12, marginTop: 2 },
+  brandSub: {
+    marginTop: 2,
+  },
+  scrollContent: {
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+  },
+  itemBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    borderRadius: 24,
+    borderWidth: 1,
+  },
+  itemTexto: {
+    flex: 1,
+  },
+  logoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+  },
+  logoutTexto: {
+    fontWeight: 'bold',
+  },
 });

@@ -1,10 +1,22 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { collection, getDocs } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { db } from '../../config/firebase';
+import { useAcessibilidade } from '../../context/AcessibilidadeContext';
 
 export default function PacotesClienteScreen() {
+  const router = useRouter();
+  const { tema, config } = useAcessibilidade();
   const [pacotes, setPacotes] = useState([]);
   const [carregando, setCarregando] = useState(true);
 
@@ -13,8 +25,8 @@ export default function PacotesClienteScreen() {
       try {
         const snap = await getDocs(collection(db, 'pacotes'));
         const lista = [];
-        snap.forEach((doc) => {
-          lista.push({ id: doc.id, ...doc.data() });
+        snap.forEach((docSnap) => {
+          lista.push({ id: docSnap.id, ...docSnap.data() });
         });
         setPacotes(lista);
       } catch (error) {
@@ -26,34 +38,166 @@ export default function PacotesClienteScreen() {
     carregarPacotes();
   }, []);
 
+  function handleComprarEAgendar(item) {
+    router.push({
+      pathname: '/(cliente)/agendar',
+      params: {
+        pacoteId: item.id,
+        nomePacote: item.nome,
+        preco: String(item.preco || 0),
+        frequenciaSemanal: '1_por_semana',
+      },
+    });
+  }
+
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitulo}>Pacotes Promocionais</Text>
-        <Text style={styles.headerSub}>Aproveite os nossos combos especiais</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: tema.bgPrimary }]}>
+      <View
+        style={[
+          styles.header,
+          {
+            backgroundColor: tema.bgSurface,
+            borderBottomColor: tema.borderSubtle,
+          },
+        ]}
+      >
+        <Text
+          accessibilityRole="header"
+          style={[
+            styles.headerTitulo,
+            { color: tema.textPrimary, fontSize: tema.fontSize(20) },
+          ]}
+        >
+          Pacotes Promocionais
+        </Text>
+        {!config.modoCalmo && (
+          <Text
+            style={[
+              styles.headerSub,
+              { color: tema.accent, fontSize: tema.fontSize(13) },
+            ]}
+          >
+            Pacotes de 4 sessões equivalem a 1 sessão por semana
+          </Text>
+        )}
       </View>
 
       {carregando ? (
-        <ActivityIndicator color="#FF98B9" style={{ marginTop: 40 }} size="large" />
+        <ActivityIndicator
+          color={tema.accent}
+          accessibilityLabel="Carregando pacotes promocionais"
+          style={{ marginTop: 40 }}
+          size="large"
+        />
       ) : (
         <FlatList
           data={pacotes}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ padding: 20 }}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            padding: 20,
+            paddingBottom: 88 + tema.espacoExtra,
+            gap: 12 + tema.espacoExtra,
+          }}
           ListEmptyComponent={
-            <Text style={styles.textoVazio}>Nenhum pacote disponível no momento.</Text>
+            <Text
+              style={[
+                styles.textoVazio,
+                { color: tema.textSecondary, fontSize: tema.fontSize(14) },
+              ]}
+            >
+              Nenhum pacote disponível no momento.
+            </Text>
           }
-          renderItem={({ item }) => (
-            <View style={styles.card}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.cardTitulo}>{item.nome}</Text>
-                <Text style={styles.cardSub}>{item.descricao}</Text>
+          renderItem={({ item }) => {
+            const precoFormatado = `R$ ${Number(item.preco || 0).toFixed(2).replace('.', ',')}`;
+            const regraSemanal =
+              item.sessoes === 4 || /4\s*sess/i.test(item.nome || '')
+                ? '1 sessão por semana (4 semanas)'
+                : 'Pacote promocional';
+
+            return (
+              <View
+                style={[
+                  styles.card,
+                  {
+                    backgroundColor: tema.bgSurface,
+                    borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                  },
+                ]}
+              >
+                <View style={styles.cardTopo}>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[
+                        styles.cardTitulo,
+                        { color: tema.textPrimary, fontSize: tema.fontSize(16) },
+                      ]}
+                    >
+                      {item.nome}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.regraTexto,
+                        { color: tema.accent, fontSize: tema.fontSize(12) },
+                      ]}
+                    >
+                      {regraSemanal}
+                    </Text>
+                    {Boolean(item.descricao) && (
+                      <Text
+                        style={[
+                          styles.cardSub,
+                          { color: tema.textSecondary, fontSize: tema.fontSize(13) },
+                        ]}
+                      >
+                        {item.descricao}
+                      </Text>
+                    )}
+                  </View>
+                  <View style={{ alignItems: 'flex-end', marginLeft: 10 }}>
+                    <Text
+                      style={[
+                        styles.cardValor,
+                        { color: tema.accent, fontSize: tema.fontSize(16) },
+                      ]}
+                    >
+                      {precoFormatado}
+                    </Text>
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  hitSlop={tema.hitSlopPadrao}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Comprar e agendar ${item.nome}, valor ${precoFormatado}, ${regraSemanal}`}
+                  onPress={() => handleComprarEAgendar(item)}
+                  style={[
+                    styles.btnComprarAgendar,
+                    {
+                      backgroundColor: tema.accent,
+                      minHeight: tema.minTouchHeight,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name="calendar-outline"
+                    size={18}
+                    color={tema.textOnAccent}
+                    accessible={false}
+                  />
+                  <Text
+                    style={[
+                      styles.btnComprarAgendarTexto,
+                      { color: tema.textOnAccent, fontSize: tema.fontSize(13) },
+                    ]}
+                  >
+                    Comprar e Agendar
+                  </Text>
+                </TouchableOpacity>
               </View>
-              <View style={{ alignItems: 'flex-end', marginLeft: 10 }}>
-                <Text style={styles.cardValor}>R$ {Number(item.preco).toFixed(2).replace('.', ',')}</Text>
-              </View>
-            </View>
-          )}
+            );
+          }}
         />
       )}
     </SafeAreaView>
@@ -61,13 +205,33 @@ export default function PacotesClienteScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#434643' },
-  header: { padding: 20, backgroundColor: '#595959', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)' },
-  headerTitulo: { color: '#FFF', fontSize: 20, fontWeight: 'bold' },
-  headerSub: { color: '#FF98B9', fontSize: 13, marginTop: 2 },
-  textoVazio: { color: '#D1D1D1', textAlign: 'center', marginTop: 40, fontSize: 14 },
-  card: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#595959', padding: 16, borderRadius: 14, marginBottom: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-  cardTitulo: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
-  cardSub: { color: '#D1D1D1', fontSize: 13, marginTop: 4 },
-  cardValor: { color: '#FF98B9', fontSize: 16, fontWeight: 'bold' },
+  container: { flex: 1 },
+  header: { padding: 20, borderBottomWidth: 1 },
+  headerTitulo: { fontWeight: 'bold' },
+  headerSub: { marginTop: 2 },
+  textoVazio: { textAlign: 'center', marginTop: 40 },
+  card: {
+    padding: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 12,
+  },
+  cardTopo: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  cardTitulo: { fontWeight: 'bold' },
+  regraTexto: { fontWeight: '600', marginTop: 3 },
+  cardSub: { marginTop: 4 },
+  cardValor: { fontWeight: 'bold' },
+  btnComprarAgendar: {
+    borderRadius: 10,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  btnComprarAgendarTexto: { fontWeight: 'bold' },
 });

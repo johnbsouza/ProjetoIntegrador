@@ -6,9 +6,11 @@ import { useEffect, useState } from 'react';
 import { Alert, FlatList, Modal, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { db } from '../../config/firebase';
+import { useAcessibilidade } from '../../context/AcessibilidadeContext';
 
 export default function TelaEstoqueCaixa() {
   const router = useRouter();
+  const { tema, config } = useAcessibilidade();
   const [produtos, setProdutos] = useState([]);
   const [modalVisivel, setModalVisivel] = useState(false);
   const [nome, setNome] = useState('');
@@ -25,7 +27,7 @@ export default function TelaEstoqueCaixa() {
       });
       setProdutos(lista);
     } catch (error) {
-      console.error("Erro ao buscar estoque:", error);
+      console.error('Erro ao buscar estoque:', error);
     }
   };
 
@@ -53,14 +55,14 @@ export default function TelaEstoqueCaixa() {
         await updateDoc(docRef, {
           nome,
           quantidade: Number(quantidade),
-          preco: precoNumerico
+          preco: precoNumerico,
         });
         Alert.alert('Sucesso', 'Item atualizado com sucesso!');
       } else {
         await addDoc(collection(db, 'estoque'), {
           nome,
           quantidade: Number(quantidade),
-          preco: precoNumerico
+          preco: precoNumerico,
         });
         Alert.alert('Sucesso', 'Item adicionado ao estoque!');
       }
@@ -98,81 +100,290 @@ export default function TelaEstoqueCaixa() {
   }
 
   return (
-    <LinearGradient colors={['#1E201E', '#434643', '#1A1C1A']} style={{ flex: 1 }}>
+    <LinearGradient
+      colors={config.altoContraste ? [tema.bgPrimary, tema.bgPrimary] : ['#1E201E', '#434643', '#1A1C1A']}
+      style={{ flex: 1 }}
+    >
       <SafeAreaView style={estilos.tela}>
         <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-        
+
         <View style={estilos.header}>
-          <TouchableOpacity style={estilos.backButton} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={20} color="#FF98B9" />
+          <TouchableOpacity
+            hitSlop={tema.hitSlopPadrao}
+            accessibilityRole="button"
+            accessibilityLabel="Voltar para a tela anterior"
+            style={[
+              estilos.backButton,
+              {
+                minWidth: tema.minTouchHeight,
+                minHeight: tema.minTouchHeight,
+                backgroundColor: tema.bgSurface,
+                borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+              },
+            ]}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="arrow-back" size={20} color={tema.accent} />
           </TouchableOpacity>
-          <Text style={estilos.tituloTopo}>Caixa & Estoque</Text>
-          <TouchableOpacity style={estilos.addButton} onPress={() => setModalVisivel(true)}>
-            <Ionicons name="add" size={22} color="#434643" />
+          <Text
+            accessibilityRole="header"
+            style={[
+              estilos.tituloTopo,
+              { color: tema.accent, fontSize: tema.fontSize(20) },
+            ]}
+          >
+            Caixa & Estoque
+          </Text>
+          <TouchableOpacity
+            hitSlop={tema.hitSlopPadrao}
+            accessibilityRole="button"
+            accessibilityLabel="Adicionar novo produto ou insumo"
+            style={[
+              estilos.addButton,
+              {
+                minWidth: tema.minTouchHeight,
+                minHeight: tema.minTouchHeight,
+                backgroundColor: tema.accent,
+              },
+            ]}
+            onPress={() => setModalVisivel(true)}
+          >
+            <Ionicons name="add" size={22} color={tema.textOnAccent} />
           </TouchableOpacity>
         </View>
 
         <FlatList
           data={produtos}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={estilos.lista}
-          renderItem={({ item }) => (
-            <View style={estilos.card}>
-              <View style={{ flex: 1 }}>
-                <Text style={estilos.cardTitulo}>{item.nome}</Text>
-                <Text style={estilos.cardSub}>Qtd em Stock: {item.quantidade} unidades</Text>
-              </View>
-              <View style={{ alignItems: 'flex-end', marginRight: 15 }}>
-                <Text style={estilos.cardValor}>R$ {Number(item.preco).toFixed(2).replace('.', ',')}</Text>
-              </View>
-              <TouchableOpacity onPress={() => abrirEdicao(item)} style={estilos.acaoBtn}>
-                <Ionicons name="create-outline" size={18} color="#FF98B9" />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => excluirProduto(item.id)} style={estilos.acaoBtn}>
-                <Ionicons name="trash-outline" size={18} color="#FF98B9" />
-              </TouchableOpacity>
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[
+            estilos.lista,
+            { paddingBottom: 88 + tema.espacoExtra, gap: 12 + tema.espacoExtra },
+          ]}
+          ListEmptyComponent={
+            <View style={estilos.vazioBox}>
+              <Ionicons name="cube-outline" size={40} color={tema.textMuted} accessible={false} />
+              <Text
+                style={[
+                  estilos.vazioTexto,
+                  { color: tema.textSecondary, fontSize: tema.fontSize(14) },
+                ]}
+              >
+                Nenhum produto ou insumo cadastrado.
+              </Text>
             </View>
-          )}
+          }
+          renderItem={({ item }) => {
+            const precoTexto = `R$ ${Number(item.preco).toFixed(2).replace('.', ',')}`;
+            return (
+              <View
+                style={[
+                  estilos.card,
+                  {
+                    backgroundColor: tema.bgSurface,
+                    borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                  },
+                ]}
+              >
+                <View style={{ flex: 1, marginRight: 8 }}>
+                  <Text
+                    style={[
+                      estilos.cardTitulo,
+                      { color: tema.textPrimary, fontSize: tema.fontSize(16) },
+                    ]}
+                  >
+                    {item.nome}
+                  </Text>
+                  <Text
+                    style={[
+                      estilos.cardSub,
+                      { color: tema.textSecondary, fontSize: tema.fontSize(12) },
+                    ]}
+                  >
+                    Qtd em Stock: {item.quantidade} unidades
+                  </Text>
+                </View>
+                <View style={{ alignItems: 'flex-end', marginRight: 10 }}>
+                  <Text
+                    style={[
+                      estilos.cardValor,
+                      { color: tema.accent, fontSize: tema.fontSize(16) },
+                    ]}
+                  >
+                    {precoTexto}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  hitSlop={tema.hitSlopPadrao}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Editar ${item.nome}`}
+                  onPress={() => abrirEdicao(item)}
+                  style={[
+                    estilos.acaoBtn,
+                    {
+                      minWidth: tema.minTouchHeight,
+                      minHeight: tema.minTouchHeight,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    },
+                  ]}
+                >
+                  <Ionicons name="create-outline" size={18} color={tema.accent} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  hitSlop={tema.hitSlopPadrao}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Excluir ${item.nome}`}
+                  onPress={() => excluirProduto(item.id)}
+                  style={[
+                    estilos.acaoBtn,
+                    {
+                      minWidth: tema.minTouchHeight,
+                      minHeight: tema.minTouchHeight,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    },
+                  ]}
+                >
+                  <Ionicons name="trash-outline" size={18} color={tema.danger} />
+                </TouchableOpacity>
+              </View>
+            );
+          }}
         />
 
-        <Modal visible={modalVisivel} animationType="slide" transparent>
+        <Modal
+          visible={modalVisivel}
+          animationType="slide"
+          transparent
+          accessibilityViewIsModal
+          onRequestClose={fecharModal}
+        >
           <View style={estilos.modalFundo}>
-            <View style={estilos.modalCard}>
-              <Text style={estilos.modalTitulo}>{idEditando ? 'Editar Produto' : 'Novo Produto'}</Text>
-              
-              <TextInput 
-                style={estilos.input} 
-                placeholder="Nome do Produto / Insumo" 
-                placeholderTextColor="rgba(255, 255, 255, 0.4)"
+            <View
+              style={[
+                estilos.modalCard,
+                {
+                  backgroundColor: tema.bgSurface,
+                  borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                },
+              ]}
+            >
+              <Text
+                accessibilityRole="header"
+                style={[
+                  estilos.modalTitulo,
+                  { color: tema.accent, fontSize: tema.fontSize(20) },
+                ]}
+              >
+                {idEditando ? 'Editar Produto' : 'Novo Produto'}
+              </Text>
+
+              <TextInput
+                accessibilityLabel="Nome do Produto ou Insumo"
+                style={[
+                  estilos.input,
+                  {
+                    backgroundColor: tema.bgElevated,
+                    color: tema.textPrimary,
+                    fontSize: tema.fontSize(15),
+                    borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                    minHeight: tema.minTouchHeight,
+                  },
+                ]}
+                placeholder="Nome do Produto / Insumo"
+                placeholderTextColor={tema.textMuted}
                 maxLength={40}
                 value={nome}
                 onChangeText={setNome}
               />
-              
-              <TextInput 
-                style={estilos.input} 
-                placeholder="Quantidade" 
-                placeholderTextColor="rgba(255, 255, 255, 0.4)"
+
+              <TextInput
+                accessibilityLabel="Quantidade em estoque"
+                style={[
+                  estilos.input,
+                  {
+                    backgroundColor: tema.bgElevated,
+                    color: tema.textPrimary,
+                    fontSize: tema.fontSize(15),
+                    borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                    minHeight: tema.minTouchHeight,
+                  },
+                ]}
+                placeholder="Quantidade"
+                placeholderTextColor={tema.textMuted}
                 keyboardType="numeric"
                 value={quantidade}
                 onChangeText={setQuantidade}
               />
 
-              <TextInput 
-                style={estilos.input} 
-                placeholder="Preço Unitário (R$)" 
-                placeholderTextColor="rgba(255, 255, 255, 0.4)"
+              <TextInput
+                accessibilityLabel="Preço Unitário em Reais"
+                style={[
+                  estilos.input,
+                  {
+                    backgroundColor: tema.bgElevated,
+                    color: tema.textPrimary,
+                    fontSize: tema.fontSize(15),
+                    borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                    minHeight: tema.minTouchHeight,
+                  },
+                ]}
+                placeholder="Preço Unitário (R$)"
+                placeholderTextColor={tema.textMuted}
                 keyboardType="numeric"
                 value={precoFormatado}
                 onChangeText={(text) => setPrecoFormatado(formatarMoeda(text))}
               />
 
-              <View style={estilos.modalBotoes}>
-                <TouchableOpacity style={estilos.botaoCancelar} onPress={fecharModal}>
-                  <Text style={estilos.textoBotaoCancelar}>Cancelar</Text>
+              <View style={[estilos.modalBotoes, { gap: 10 + tema.espacoExtra }]}>
+                <TouchableOpacity
+                  hitSlop={tema.hitSlopPadrao}
+                  accessibilityRole="button"
+                  accessibilityLabel="Cancelar operação"
+                  style={[
+                    estilos.botaoCancelar,
+                    {
+                      backgroundColor: tema.bgElevated,
+                      borderColor: config.altoContraste ? tema.borderSubtle : 'transparent',
+                      borderWidth: config.altoContraste ? 1 : 0,
+                      minHeight: tema.minTouchHeight,
+                      justifyContent: 'center',
+                    },
+                  ]}
+                  onPress={fecharModal}
+                >
+                  <Text
+                    style={[
+                      estilos.textoBotaoCancelar,
+                      { color: tema.textPrimary, fontSize: tema.fontSize(14) },
+                    ]}
+                  >
+                    Cancelar
+                  </Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={estilos.botaoSalvarModal} onPress={salvarProduto}>
-                  <Text style={estilos.textoBotaoSalvar}>Salvar</Text>
+                <TouchableOpacity
+                  hitSlop={tema.hitSlopPadrao}
+                  accessibilityRole="button"
+                  accessibilityLabel="Salvar produto"
+                  style={[
+                    estilos.botaoSalvarModal,
+                    {
+                      backgroundColor: tema.accent,
+                      minHeight: tema.minTouchHeight,
+                      justifyContent: 'center',
+                    },
+                  ]}
+                  onPress={salvarProduto}
+                >
+                  <Text
+                    style={[
+                      estilos.textoBotaoSalvar,
+                      { color: tema.textOnAccent, fontSize: tema.fontSize(14) },
+                    ]}
+                  >
+                    Salvar
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -186,22 +397,60 @@ export default function TelaEstoqueCaixa() {
 const estilos = StyleSheet.create({
   tela: { flex: 1, paddingHorizontal: 20 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 15 },
-  backButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(89, 89, 89, 0.6)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(107, 110, 107, 0.5)' },
-  addButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#FF98B9', justifyContent: 'center', alignItems: 'center' },
-  tituloTopo: { fontSize: 20, color: '#FF98B9', fontWeight: 'bold', letterSpacing: 0.5 },
-  lista: { paddingBottom: 20 },
-  card: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(67, 70, 67, 0.8)', padding: 16, borderRadius: 18, marginBottom: 12, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' },
-  cardTitulo: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
-  cardSub: { color: 'rgba(209, 209, 209, 0.6)', fontSize: 12, marginTop: 4 },
-  cardValor: { color: '#FF98B9', fontSize: 16, fontWeight: 'bold' },
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  addButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tituloTopo: { fontWeight: 'bold', letterSpacing: 0.5 },
+  lista: {},
+  vazioBox: {
+    paddingVertical: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  vazioTexto: {
+    textAlign: 'center',
+  },
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+  },
+  cardTitulo: { fontWeight: 'bold' },
+  cardSub: { marginTop: 4 },
+  cardValor: { fontWeight: 'bold' },
   acaoBtn: { padding: 8 },
   modalFundo: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.7)', justifyContent: 'center', padding: 20 },
-  modalCard: { backgroundColor: '#2C2F2C', padding: 22, borderRadius: 22, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.12)' },
-  modalTitulo: { fontSize: 20, color: '#FF98B9', fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
-  input: { backgroundColor: 'rgba(89, 89, 89, 0.6)', color: '#FFF', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13, fontSize: 15, borderWidth: 1, borderColor: 'rgba(209, 209, 209, 0.15)', marginBottom: 12 },
-  modalBotoes: { flexDirection: 'row', gap: 10, marginTop: 10 },
-  botaoCancelar: { flex: 1, backgroundColor: 'rgba(89, 89, 89, 0.8)', paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
-  textoBotaoCancelar: { color: '#FFF', fontWeight: 'bold' },
-  botaoSalvarModal: { flex: 1, backgroundColor: '#FF98B9', paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
-  textoBotaoSalvar: { color: '#434643', fontWeight: 'bold' }
+  modalCard: {
+    padding: 22,
+    borderRadius: 22,
+    borderWidth: 1,
+  },
+  modalTitulo: { fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
+  input: {
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  modalBotoes: { flexDirection: 'row', marginTop: 10 },
+  botaoCancelar: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
+  textoBotaoCancelar: { fontWeight: 'bold' },
+  botaoSalvarModal: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
+  textoBotaoSalvar: { fontWeight: 'bold' },
 });

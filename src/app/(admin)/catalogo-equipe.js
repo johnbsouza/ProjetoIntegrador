@@ -1,49 +1,31 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import {
-    addDoc,
-    collection,
-    deleteDoc,
-    doc,
-    onSnapshot,
-    query,
-    serverTimestamp,
-    updateDoc,
-    where,
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  query,
+  serverTimestamp,
+  updateDoc,
+  where,
 } from 'firebase/firestore';
 import { useEffect, useMemo, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { db } from '../../config/firebase';
-
-const COLORS = {
-  bgPrimary: '#1E201E',
-  bgSurface: '#2A2D2A',
-  bgElevated: '#343834',
-  bgDark: '#161816',
-  borderSubtle: 'rgba(255,255,255,0.08)',
-  accent: '#FF98B9',
-  accentSoft: 'rgba(255, 152, 185, 0.15)',
-  accentBorder: 'rgba(255, 152, 185, 0.42)',
-  textPrimary: '#FFFFFF',
-  textSecondary: '#C8CCC8',
-  textMuted: '#8E938E',
-  textOnAccent: '#1E201E',
-  success: '#A5D6A7',
-  successSoft: 'rgba(165, 214, 167, 0.14)',
-  danger: '#FF7B7B',
-  dangerSoft: 'rgba(255, 123, 123, 0.14)',
-};
+import { useAcessibilidade } from '../../context/AcessibilidadeContext';
 
 function formatarMoeda(valor) {
   const numero = Number(valor) || 0;
@@ -68,11 +50,11 @@ function parseComissao(texto) {
 
 export default function CatalogoEquipeAdminScreen() {
   const router = useRouter();
+  const { tema, config } = useAcessibilidade();
 
-  const [abaAtiva, setAbaAtiva] = useState('servicos'); // 'servicos' | 'profissionais'
+  const [abaAtiva, setAbaAtiva] = useState('servicos');
   const [busca, setBusca] = useState('');
 
-  // Estados de Serviços
   const [servicos, setServicos] = useState([]);
   const [carregandoServicos, setCarregandoServicos] = useState(true);
   const [modalServicoVisivel, setModalServicoVisivel] = useState(false);
@@ -84,7 +66,6 @@ export default function CatalogoEquipeAdminScreen() {
   const [ativoServico, setAtivoServico] = useState(true);
   const [salvandoServico, setSalvandoServico] = useState(false);
 
-  // Estados de Profissionais
   const [profissionais, setProfissionais] = useState([]);
   const [carregandoProfissionais, setCarregandoProfissionais] = useState(true);
   const [modalProfVisivel, setModalProfVisivel] = useState(false);
@@ -167,7 +148,6 @@ export default function CatalogoEquipeAdminScreen() {
     });
   }, [profissionais, busca]);
 
-  // --- CRUD SERVIÇOS ---
   function abrirModalNovoServico() {
     setServicoEditando(null);
     setNomeServico('');
@@ -257,7 +237,6 @@ export default function CatalogoEquipeAdminScreen() {
     );
   }
 
-  // --- CRUD PROFISSIONAIS ---
   function abrirModalNovoProfissional() {
     setProfEditando(null);
     setNomeProf('');
@@ -275,8 +254,7 @@ export default function CatalogoEquipeAdminScreen() {
     setEmailProf(item.email || '');
     setTelefoneProf(item.telefone || '');
     setEspecialidadeProf(item.especialidade || '');
-    const comissaoAtual =
-      item.percentualComissao ?? item.comissao ?? 50;
+    const comissaoAtual = item.percentualComissao ?? item.comissao ?? 50;
     setComissaoProf(String(comissaoAtual));
     setAtivoProf(item.ativo !== false);
     setModalProfVisivel(true);
@@ -359,17 +337,44 @@ export default function CatalogoEquipeAdminScreen() {
     abaAtiva === 'servicos' ? carregandoServicos : carregandoProfissionais;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.topBar}>
+    <SafeAreaView style={[styles.container, { backgroundColor: tema.bgPrimary }]}>
+      <View
+        style={[
+          styles.topBar,
+          {
+            backgroundColor: tema.bgSurface,
+            borderBottomColor: tema.borderSubtle,
+          },
+        ]}
+      >
         <TouchableOpacity
           onPress={() => router.back()}
-          style={styles.iconButton}
-          accessibilityLabel="Voltar"
+          hitSlop={tema.hitSlopPadrao}
+          accessibilityRole="button"
+          accessibilityLabel="Voltar para a tela anterior"
+          style={[
+            styles.iconButton,
+            {
+              backgroundColor: tema.bgElevated,
+              minWidth: tema.minTouchHeight,
+              minHeight: tema.minTouchHeight,
+              borderWidth: config.altoContraste ? 1 : 0,
+              borderColor: tema.borderSubtle,
+            },
+          ]}
         >
-          <Ionicons name="arrow-back" size={22} color={COLORS.textPrimary} />
+          <Ionicons name="arrow-back" size={22} color={tema.textPrimary} />
         </TouchableOpacity>
 
-        <Text style={styles.topTitle}>Catálogo e Equipe</Text>
+        <Text
+          accessibilityRole="header"
+          style={[
+            styles.topTitle,
+            { color: tema.textPrimary, fontSize: tema.fontSize(18) },
+          ]}
+        >
+          Catálogo e Equipe
+        </Text>
 
         <TouchableOpacity
           onPress={
@@ -377,28 +382,60 @@ export default function CatalogoEquipeAdminScreen() {
               ? abrirModalNovoServico
               : abrirModalNovoProfissional
           }
-          style={styles.addButton}
-          accessibilityLabel="Adicionar novo item"
+          hitSlop={tema.hitSlopPadrao}
+          accessibilityRole="button"
+          accessibilityLabel={
+            abaAtiva === 'servicos'
+              ? 'Adicionar novo serviço'
+              : 'Adicionar nova profissional'
+          }
+          style={[
+            styles.addButton,
+            {
+              backgroundColor: tema.accent,
+              minWidth: tema.minTouchHeight,
+              minHeight: tema.minTouchHeight,
+            },
+          ]}
         >
-          <Ionicons name="add" size={22} color={COLORS.textOnAccent} />
+          <Ionicons name="add" size={22} color={tema.textOnAccent} />
         </TouchableOpacity>
       </View>
 
-      {/* Alternador de abas */}
-      <View style={styles.abasRow}>
+      <View style={[styles.abasRow, { gap: 10 + tema.espacoExtra }]}>
         <TouchableOpacity
-          style={[styles.abaBtn, abaAtiva === 'servicos' && styles.abaBtnAtiva]}
+          hitSlop={tema.hitSlopPadrao}
+          accessibilityRole="tab"
+          accessibilityLabel={`Aba Serviços, ${servicos.length} cadastrados`}
+          accessibilityState={{ selected: abaAtiva === 'servicos' }}
+          style={[
+            styles.abaBtn,
+            {
+              minHeight: tema.minTouchHeight,
+              backgroundColor:
+                abaAtiva === 'servicos' ? tema.accent : tema.bgSurface,
+              borderColor:
+                abaAtiva === 'servicos' ? tema.accent : tema.borderSubtle,
+            },
+          ]}
           onPress={() => setAbaAtiva('servicos')}
         >
           <Ionicons
             name="sparkles-outline"
             size={16}
-            color={abaAtiva === 'servicos' ? COLORS.textOnAccent : COLORS.textSecondary}
+            color={abaAtiva === 'servicos' ? tema.textOnAccent : tema.textSecondary}
           />
           <Text
             style={[
               styles.abaTexto,
-              abaAtiva === 'servicos' && styles.abaTextoAtiva,
+              {
+                fontSize: tema.fontSize(13),
+                color:
+                  abaAtiva === 'servicos'
+                    ? tema.textOnAccent
+                    : tema.textSecondary,
+                fontWeight: abaAtiva === 'servicos' ? 'bold' : '600',
+              },
             ]}
           >
             Serviços ({servicos.length})
@@ -406,20 +443,42 @@ export default function CatalogoEquipeAdminScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.abaBtn, abaAtiva === 'profissionais' && styles.abaBtnAtiva]}
+          hitSlop={tema.hitSlopPadrao}
+          accessibilityRole="tab"
+          accessibilityLabel={`Aba Profissionais, ${profissionais.length} cadastradas`}
+          accessibilityState={{ selected: abaAtiva === 'profissionais' }}
+          style={[
+            styles.abaBtn,
+            {
+              minHeight: tema.minTouchHeight,
+              backgroundColor:
+                abaAtiva === 'profissionais' ? tema.accent : tema.bgSurface,
+              borderColor:
+                abaAtiva === 'profissionais' ? tema.accent : tema.borderSubtle,
+            },
+          ]}
           onPress={() => setAbaAtiva('profissionais')}
         >
           <Ionicons
             name="people-outline"
             size={16}
             color={
-              abaAtiva === 'profissionais' ? COLORS.textOnAccent : COLORS.textSecondary
+              abaAtiva === 'profissionais'
+                ? tema.textOnAccent
+                : tema.textSecondary
             }
           />
           <Text
             style={[
               styles.abaTexto,
-              abaAtiva === 'profissionais' && styles.abaTextoAtiva,
+              {
+                fontSize: tema.fontSize(13),
+                color:
+                  abaAtiva === 'profissionais'
+                    ? tema.textOnAccent
+                    : tema.textSecondary,
+                fontWeight: abaAtiva === 'profissionais' ? 'bold' : '600',
+              },
             ]}
           >
             Profissionais ({profissionais.length})
@@ -427,11 +486,27 @@ export default function CatalogoEquipeAdminScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Busca */}
-      <View style={styles.buscaBox}>
-        <Ionicons name="search-outline" size={18} color={COLORS.textMuted} />
+      <View
+        style={[
+          styles.buscaBox,
+          {
+            backgroundColor: tema.bgElevated,
+            borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+            minHeight: tema.minTouchHeight,
+          },
+        ]}
+      >
+        <Ionicons name="search-outline" size={18} color={tema.textMuted} accessible={false} />
         <TextInput
-          style={styles.buscaInput}
+          accessibilityLabel={
+            abaAtiva === 'servicos'
+              ? 'Buscar serviço ou categoria'
+              : 'Buscar profissional ou especialidade'
+          }
+          style={[
+            styles.buscaInput,
+            { color: tema.textPrimary, fontSize: tema.fontSize(14) },
+          ]}
           value={busca}
           onChangeText={setBusca}
           placeholder={
@@ -439,42 +514,96 @@ export default function CatalogoEquipeAdminScreen() {
               ? 'Buscar serviço ou categoria...'
               : 'Buscar profissional ou especialidade...'
           }
-          placeholderTextColor={COLORS.textMuted}
+          placeholderTextColor={tema.textMuted}
         />
         {busca.length > 0 && (
-          <TouchableOpacity onPress={() => setBusca('')}>
-            <Ionicons name="close-circle" size={18} color={COLORS.textMuted} />
+          <TouchableOpacity
+            hitSlop={tema.hitSlopPadrao}
+            accessibilityRole="button"
+            accessibilityLabel="Limpar busca"
+            onPress={() => setBusca('')}
+          >
+            <Ionicons name="close-circle" size={18} color={tema.textMuted} />
           </TouchableOpacity>
         )}
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: 88 + tema.espacoExtra },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         {carregandoAtual ? (
           <View style={styles.centro}>
-            <ActivityIndicator size="large" color={COLORS.accent} />
-            <Text style={styles.estadoTexto}>Carregando registros...</Text>
+            <ActivityIndicator size="large" color={tema.accent} />
+            <Text
+              style={[
+                styles.estadoTexto,
+                { color: tema.textSecondary, fontSize: tema.fontSize(13) },
+              ]}
+            >
+              Carregando registros...
+            </Text>
           </View>
         ) : abaAtiva === 'servicos' ? (
           servicosFiltrados.length === 0 ? (
             <View style={styles.centro}>
-              <Ionicons name="sparkles-outline" size={42} color={COLORS.textMuted} />
-              <Text style={styles.estadoTitulo}>Nenhum serviço encontrado</Text>
-              <Text style={styles.estadoTexto}>
-                Toque no botão "+" no topo para cadastrar um novo serviço.
+              <Ionicons name="sparkles-outline" size={42} color={tema.textMuted} accessible={false} />
+              <Text
+                style={[
+                  styles.estadoTitulo,
+                  { color: tema.textPrimary, fontSize: tema.fontSize(16) },
+                ]}
+              >
+                Nenhum serviço encontrado
               </Text>
+              {!config.modoCalmo && (
+                <Text
+                  style={[
+                    styles.estadoTexto,
+                    { color: tema.textSecondary, fontSize: tema.fontSize(13) },
+                  ]}
+                >
+                  Toque no botão "+" no topo para cadastrar um novo serviço.
+                </Text>
+              )}
             </View>
           ) : (
-            <View style={styles.lista}>
+            <View style={[styles.lista, { gap: 12 + tema.espacoExtra }]}>
               {servicosFiltrados.map((item) => {
                 const estaAtivo = item.ativo !== false;
                 const estaExcluindo = excluindoId === item.id;
+                const nomeItem = item.nome || 'Serviço';
 
                 return (
-                  <View key={item.id} style={styles.card}>
+                  <View
+                    key={item.id}
+                    style={[
+                      styles.card,
+                      {
+                        backgroundColor: tema.bgSurface,
+                        borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                      },
+                    ]}
+                  >
                     <View style={styles.cardTopo}>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.cardTitulo}>{item.nome || 'Serviço'}</Text>
-                        <Text style={styles.cardSub}>
+                        <Text
+                          style={[
+                            styles.cardTitulo,
+                            { color: tema.textPrimary, fontSize: tema.fontSize(16) },
+                          ]}
+                        >
+                          {nomeItem}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.cardSub,
+                            { color: tema.textSecondary, fontSize: tema.fontSize(12) },
+                          ]}
+                        >
                           {item.categoria || 'Geral'} • {item.duracaoMin || 30} min
                         </Text>
                       </View>
@@ -482,13 +611,25 @@ export default function CatalogoEquipeAdminScreen() {
                       <View
                         style={[
                           styles.statusPill,
-                          estaAtivo ? styles.pillAtivo : styles.pillInativo,
+                          {
+                            backgroundColor: estaAtivo ? tema.successSoft : tema.dangerSoft,
+                            borderColor: estaAtivo
+                              ? config.altoContraste
+                                ? tema.success
+                                : 'rgba(165, 214, 167, 0.35)'
+                              : config.altoContraste
+                              ? tema.danger
+                              : 'rgba(255, 123, 123, 0.35)',
+                          },
                         ]}
                       >
                         <Text
                           style={[
                             styles.statusTexto,
-                            estaAtivo ? styles.textoAtivo : styles.textoInativo,
+                            {
+                              fontSize: tema.fontSize(11),
+                              color: estaAtivo ? tema.success : tema.danger,
+                            },
                           ]}
                         >
                           {estaAtivo ? 'Ativo' : 'Inativo'}
@@ -496,28 +637,70 @@ export default function CatalogoEquipeAdminScreen() {
                       </View>
                     </View>
 
-                    <View style={styles.cardRodape}>
-                      <Text style={styles.precoDestaque}>{formatarMoeda(item.preco)}</Text>
+                    <View
+                      style={[
+                        styles.cardRodape,
+                        { borderTopColor: tema.borderSubtle },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.precoDestaque,
+                          { color: tema.accent, fontSize: tema.fontSize(16) },
+                        ]}
+                      >
+                        {formatarMoeda(item.preco)}
+                      </Text>
 
-                      <View style={styles.acoesRow}>
+                      <View style={[styles.acoesRow, { gap: 8 + tema.espacoExtra }]}>
                         <TouchableOpacity
-                          style={styles.btnEditar}
+                          hitSlop={tema.hitSlopPadrao}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Editar serviço ${nomeItem}`}
+                          style={[
+                            styles.btnEditar,
+                            {
+                              minHeight: tema.minTouchHeight,
+                              backgroundColor: tema.accentSoft,
+                              borderColor: tema.accentBorder,
+                            },
+                          ]}
                           onPress={() => abrirModalEditarServico(item)}
                           disabled={estaExcluindo}
                         >
-                          <Ionicons name="create-outline" size={16} color={COLORS.accent} />
-                          <Text style={styles.btnEditarTexto}>Editar</Text>
+                          <Ionicons name="create-outline" size={16} color={tema.accent} />
+                          <Text
+                            style={[
+                              styles.btnEditarTexto,
+                              { color: tema.accent, fontSize: tema.fontSize(12) },
+                            ]}
+                          >
+                            Editar
+                          </Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
-                          style={styles.btnExcluir}
+                          hitSlop={tema.hitSlopPadrao}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Excluir serviço ${nomeItem}`}
+                          style={[
+                            styles.btnExcluir,
+                            {
+                              minWidth: tema.minTouchHeight,
+                              minHeight: tema.minTouchHeight,
+                              backgroundColor: tema.dangerSoft,
+                              borderColor: config.altoContraste
+                                ? tema.danger
+                                : 'rgba(255, 123, 123, 0.35)',
+                            },
+                          ]}
                           onPress={() => confirmarExcluirServico(item)}
                           disabled={estaExcluindo}
                         >
                           {estaExcluindo ? (
-                            <ActivityIndicator size="small" color={COLORS.danger} />
+                            <ActivityIndicator size="small" color={tema.danger} />
                           ) : (
-                            <Ionicons name="trash-outline" size={16} color={COLORS.danger} />
+                            <Ionicons name="trash-outline" size={16} color={tema.danger} />
                           )}
                         </TouchableOpacity>
                       </View>
@@ -529,25 +712,61 @@ export default function CatalogoEquipeAdminScreen() {
           )
         ) : profissionaisFiltrados.length === 0 ? (
           <View style={styles.centro}>
-            <Ionicons name="people-outline" size={42} color={COLORS.textMuted} />
-            <Text style={styles.estadoTitulo}>Nenhuma profissional encontrada</Text>
-            <Text style={styles.estadoTexto}>
-              Toque no botão "+" no topo para adicionar uma profissional à equipe.
+            <Ionicons name="people-outline" size={42} color={tema.textMuted} accessible={false} />
+            <Text
+              style={[
+                styles.estadoTitulo,
+                { color: tema.textPrimary, fontSize: tema.fontSize(16) },
+              ]}
+            >
+              Nenhuma profissional encontrada
             </Text>
+            {!config.modoCalmo && (
+              <Text
+                style={[
+                  styles.estadoTexto,
+                  { color: tema.textSecondary, fontSize: tema.fontSize(13) },
+                ]}
+              >
+                Toque no botão "+" no topo para adicionar uma profissional à equipe.
+              </Text>
+            )}
           </View>
         ) : (
-          <View style={styles.lista}>
+          <View style={[styles.lista, { gap: 12 + tema.espacoExtra }]}>
             {profissionaisFiltrados.map((prof) => {
               const estaAtivo = prof.ativo !== false;
               const comissao = prof.percentualComissao ?? prof.comissao ?? 50;
               const estaExcluindo = excluindoId === prof.id;
+              const nomeItem = prof.nome || 'Profissional';
 
               return (
-                <View key={prof.id} style={styles.card}>
+                <View
+                  key={prof.id}
+                  style={[
+                    styles.card,
+                    {
+                      backgroundColor: tema.bgSurface,
+                      borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                    },
+                  ]}
+                >
                   <View style={styles.cardTopo}>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.cardTitulo}>{prof.nome || 'Profissional'}</Text>
-                      <Text style={styles.cardSub}>
+                      <Text
+                        style={[
+                          styles.cardTitulo,
+                          { color: tema.textPrimary, fontSize: tema.fontSize(16) },
+                        ]}
+                      >
+                        {nomeItem}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.cardSub,
+                          { color: tema.textSecondary, fontSize: tema.fontSize(12) },
+                        ]}
+                      >
                         {prof.especialidade || 'Especialidade não informada'}
                       </Text>
                     </View>
@@ -555,13 +774,25 @@ export default function CatalogoEquipeAdminScreen() {
                     <View
                       style={[
                         styles.statusPill,
-                        estaAtivo ? styles.pillAtivo : styles.pillInativo,
+                        {
+                          backgroundColor: estaAtivo ? tema.successSoft : tema.dangerSoft,
+                          borderColor: estaAtivo
+                            ? config.altoContraste
+                              ? tema.success
+                              : 'rgba(165, 214, 167, 0.35)'
+                            : config.altoContraste
+                            ? tema.danger
+                            : 'rgba(255, 123, 123, 0.35)',
+                        },
                       ]}
                     >
                       <Text
                         style={[
                           styles.statusTexto,
-                          estaAtivo ? styles.textoAtivo : styles.textoInativo,
+                          {
+                            fontSize: tema.fontSize(11),
+                            color: estaAtivo ? tema.success : tema.danger,
+                          },
                         ]}
                       >
                         {estaAtivo ? 'Ativa' : 'Inativa'}
@@ -569,36 +800,93 @@ export default function CatalogoEquipeAdminScreen() {
                     </View>
                   </View>
 
-                  <Text style={styles.infoLinhaTexto}>
-                    Comissão: <Text style={styles.destaqueRosa}>{comissao}%</Text>
+                  <Text
+                    style={[
+                      styles.infoLinhaTexto,
+                      { color: tema.textSecondary, fontSize: tema.fontSize(13) },
+                    ]}
+                  >
+                    Comissão:{' '}
+                    <Text style={[styles.destaqueRosa, { color: tema.accent }]}>
+                      {comissao}%
+                    </Text>
                     {prof.telefone ? ` • ${prof.telefone}` : ''}
                   </Text>
                   {prof.email ? (
-                    <Text style={styles.infoSecundariaTexto}>{prof.email}</Text>
+                    <Text
+                      style={[
+                        styles.infoSecundariaTexto,
+                        { color: tema.textMuted, fontSize: tema.fontSize(12) },
+                      ]}
+                    >
+                      {prof.email}
+                    </Text>
                   ) : null}
 
-                  <View style={styles.cardRodape}>
-                    <Text style={styles.tagPapel}>Nível: Profissional</Text>
+                  <View
+                    style={[
+                      styles.cardRodape,
+                      { borderTopColor: tema.borderSubtle },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.tagPapel,
+                        { color: tema.textMuted, fontSize: tema.fontSize(12) },
+                      ]}
+                    >
+                      Nível: Profissional
+                    </Text>
 
-                    <View style={styles.acoesRow}>
+                    <View style={[styles.acoesRow, { gap: 8 + tema.espacoExtra }]}>
                       <TouchableOpacity
-                        style={styles.btnEditar}
+                        hitSlop={tema.hitSlopPadrao}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Editar profissional ${nomeItem}`}
+                        style={[
+                          styles.btnEditar,
+                          {
+                            minHeight: tema.minTouchHeight,
+                            backgroundColor: tema.accentSoft,
+                            borderColor: tema.accentBorder,
+                          },
+                        ]}
                         onPress={() => abrirModalEditarProfissional(prof)}
                         disabled={estaExcluindo}
                       >
-                        <Ionicons name="create-outline" size={16} color={COLORS.accent} />
-                        <Text style={styles.btnEditarTexto}>Editar</Text>
+                        <Ionicons name="create-outline" size={16} color={tema.accent} />
+                        <Text
+                          style={[
+                            styles.btnEditarTexto,
+                            { color: tema.accent, fontSize: tema.fontSize(12) },
+                          ]}
+                        >
+                          Editar
+                        </Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity
-                        style={styles.btnExcluir}
+                        hitSlop={tema.hitSlopPadrao}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Remover profissional ${nomeItem}`}
+                        style={[
+                          styles.btnExcluir,
+                          {
+                            minWidth: tema.minTouchHeight,
+                            minHeight: tema.minTouchHeight,
+                            backgroundColor: tema.dangerSoft,
+                            borderColor: config.altoContraste
+                              ? tema.danger
+                              : 'rgba(255, 123, 123, 0.35)',
+                          },
+                        ]}
                         onPress={() => confirmarExcluirProfissional(prof)}
                         disabled={estaExcluindo}
                       >
                         {estaExcluindo ? (
-                          <ActivityIndicator size="small" color={COLORS.danger} />
+                          <ActivityIndicator size="small" color={tema.danger} />
                         ) : (
-                          <Ionicons name="trash-outline" size={16} color={COLORS.danger} />
+                          <Ionicons name="trash-outline" size={16} color={tema.danger} />
                         )}
                       </TouchableOpacity>
                     </View>
@@ -610,189 +898,456 @@ export default function CatalogoEquipeAdminScreen() {
         )}
       </ScrollView>
 
-      {/* Modal Criar/Editar Serviço */}
       <Modal
         visible={modalServicoVisivel}
         transparent
         animationType="fade"
+        accessibilityViewIsModal
         onRequestClose={() => setModalServicoVisivel(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
+          <View
+            style={[
+              styles.modalCard,
+              {
+                backgroundColor: tema.bgSurface,
+                borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+              },
+            ]}
+          >
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitulo}>
+              <Text
+                accessibilityRole="header"
+                style={[
+                  styles.modalTitulo,
+                  { color: tema.textPrimary, fontSize: tema.fontSize(18) },
+                ]}
+              >
                 {servicoEditando ? 'Editar Serviço' : 'Novo Serviço'}
               </Text>
-              <TouchableOpacity onPress={() => setModalServicoVisivel(false)}>
-                <Ionicons name="close" size={22} color={COLORS.textPrimary} />
+              <TouchableOpacity
+                hitSlop={tema.hitSlopPadrao}
+                accessibilityRole="button"
+                accessibilityLabel="Fechar janela de serviço"
+                style={{
+                  minWidth: tema.minTouchHeight,
+                  minHeight: tema.minTouchHeight,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                onPress={() => setModalServicoVisivel(false)}
+              >
+                <Ionicons name="close" size={22} color={tema.textPrimary} />
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.label}>Nome do Serviço</Text>
+            <Text
+              style={[
+                styles.label,
+                { color: tema.accent, fontSize: tema.fontSize(12) },
+              ]}
+            >
+              Nome do Serviço
+            </Text>
             <TextInput
-              style={styles.input}
+              accessibilityLabel="Nome do Serviço"
+              style={[
+                styles.input,
+                {
+                  backgroundColor: tema.bgElevated,
+                  color: tema.textPrimary,
+                  fontSize: tema.fontSize(14),
+                  borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                  minHeight: tema.minTouchHeight,
+                },
+              ]}
               value={nomeServico}
               onChangeText={setNomeServico}
               placeholder="Ex.: Alongamento em Gel"
-              placeholderTextColor={COLORS.textMuted}
+              placeholderTextColor={tema.textMuted}
             />
 
-            <View style={styles.linhaInputs}>
+            <View style={[styles.linhaInputs, { gap: 10 + tema.espacoExtra }]}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.label}>Preço (R$)</Text>
+                <Text
+                  style={[
+                    styles.label,
+                    { color: tema.accent, fontSize: tema.fontSize(12) },
+                  ]}
+                >
+                  Preço (R$)
+                </Text>
                 <TextInput
-                  style={styles.input}
+                  accessibilityLabel="Preço em Reais"
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: tema.bgElevated,
+                      color: tema.textPrimary,
+                      fontSize: tema.fontSize(14),
+                      borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                      minHeight: tema.minTouchHeight,
+                    },
+                  ]}
                   value={precoServico}
                   onChangeText={setPrecoServico}
                   placeholder="85,00"
-                  placeholderTextColor={COLORS.textMuted}
+                  placeholderTextColor={tema.textMuted}
                   keyboardType="decimal-pad"
                 />
               </View>
 
               <View style={{ flex: 1 }}>
-                <Text style={styles.label}>Duração (min)</Text>
+                <Text
+                  style={[
+                    styles.label,
+                    { color: tema.accent, fontSize: tema.fontSize(12) },
+                  ]}
+                >
+                  Duração (min)
+                </Text>
                 <TextInput
-                  style={styles.input}
+                  accessibilityLabel="Duração em minutos"
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: tema.bgElevated,
+                      color: tema.textPrimary,
+                      fontSize: tema.fontSize(14),
+                      borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                      minHeight: tema.minTouchHeight,
+                    },
+                  ]}
                   value={duracaoServico}
                   onChangeText={setDuracaoServico}
                   placeholder="45"
-                  placeholderTextColor={COLORS.textMuted}
+                  placeholderTextColor={tema.textMuted}
                   keyboardType="number-pad"
                 />
               </View>
             </View>
 
-            <Text style={styles.label}>Categoria</Text>
+            <Text
+              style={[
+                styles.label,
+                { color: tema.accent, fontSize: tema.fontSize(12) },
+              ]}
+            >
+              Categoria
+            </Text>
             <TextInput
-              style={styles.input}
+              accessibilityLabel="Categoria do serviço"
+              style={[
+                styles.input,
+                {
+                  backgroundColor: tema.bgElevated,
+                  color: tema.textPrimary,
+                  fontSize: tema.fontSize(14),
+                  borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                  minHeight: tema.minTouchHeight,
+                },
+              ]}
               value={categoriaServico}
               onChangeText={setCategoriaServico}
               placeholder="Esmalteria, Spa dos Pés, Alongamento..."
-              placeholderTextColor={COLORS.textMuted}
+              placeholderTextColor={tema.textMuted}
             />
 
             <TouchableOpacity
-              style={styles.toggleLinha}
+              hitSlop={tema.hitSlopPadrao}
+              accessibilityRole="checkbox"
+              accessibilityLabel="Serviço disponível para agendamento"
+              accessibilityState={{ checked: ativoServico }}
+              style={[
+                styles.toggleLinha,
+                { minHeight: tema.minTouchHeight },
+              ]}
               onPress={() => setAtivoServico((v) => !v)}
             >
               <Ionicons
                 name={ativoServico ? 'checkbox' : 'square-outline'}
                 size={20}
-                color={COLORS.accent}
+                color={tema.accent}
               />
-              <Text style={styles.toggleTexto}>Serviço disponível para agendamento</Text>
+              <Text
+                style={[
+                  styles.toggleTexto,
+                  { color: tema.textSecondary, fontSize: tema.fontSize(13) },
+                ]}
+              >
+                Serviço disponível para agendamento
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.btnSalvarModal, salvandoServico && { opacity: 0.6 }]}
+              hitSlop={tema.hitSlopPadrao}
+              accessibilityRole="button"
+              accessibilityLabel="Salvar serviço"
+              style={[
+                styles.btnSalvarModal,
+                {
+                  backgroundColor: tema.accent,
+                  minHeight: tema.minTouchHeight,
+                  justifyContent: 'center',
+                },
+                salvandoServico && { opacity: 0.6 },
+              ]}
               onPress={salvarServico}
               disabled={salvandoServico}
             >
               {salvandoServico ? (
-                <ActivityIndicator color={COLORS.textOnAccent} />
+                <ActivityIndicator color={tema.textOnAccent} />
               ) : (
-                <Text style={styles.btnSalvarTexto}>Salvar Serviço</Text>
+                <Text
+                  style={[
+                    styles.btnSalvarTexto,
+                    { color: tema.textOnAccent, fontSize: tema.fontSize(15) },
+                  ]}
+                >
+                  Salvar Serviço
+                </Text>
               )}
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
-      {/* Modal Criar/Editar Profissional */}
       <Modal
         visible={modalProfVisivel}
         transparent
         animationType="fade"
+        accessibilityViewIsModal
         onRequestClose={() => setModalProfVisivel(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
+          <View
+            style={[
+              styles.modalCard,
+              {
+                backgroundColor: tema.bgSurface,
+                borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+              },
+            ]}
+          >
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitulo}>
+              <Text
+                accessibilityRole="header"
+                style={[
+                  styles.modalTitulo,
+                  { color: tema.textPrimary, fontSize: tema.fontSize(18) },
+                ]}
+              >
                 {profEditando ? 'Editar Profissional' : 'Nova Profissional'}
               </Text>
-              <TouchableOpacity onPress={() => setModalProfVisivel(false)}>
-                <Ionicons name="close" size={22} color={COLORS.textPrimary} />
+              <TouchableOpacity
+                hitSlop={tema.hitSlopPadrao}
+                accessibilityRole="button"
+                accessibilityLabel="Fechar janela de profissional"
+                style={{
+                  minWidth: tema.minTouchHeight,
+                  minHeight: tema.minTouchHeight,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                onPress={() => setModalProfVisivel(false)}
+              >
+                <Ionicons name="close" size={22} color={tema.textPrimary} />
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.label}>Nome completo</Text>
+            <Text
+              style={[
+                styles.label,
+                { color: tema.accent, fontSize: tema.fontSize(12) },
+              ]}
+            >
+              Nome completo
+            </Text>
             <TextInput
-              style={styles.input}
+              accessibilityLabel="Nome completo da profissional"
+              style={[
+                styles.input,
+                {
+                  backgroundColor: tema.bgElevated,
+                  color: tema.textPrimary,
+                  fontSize: tema.fontSize(14),
+                  borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                  minHeight: tema.minTouchHeight,
+                },
+              ]}
               value={nomeProf}
               onChangeText={setNomeProf}
               placeholder="Ex.: Jo"
-              placeholderTextColor={COLORS.textMuted}
+              placeholderTextColor={tema.textMuted}
             />
 
-            <Text style={styles.label}>Especialidade</Text>
+            <Text
+              style={[
+                styles.label,
+                { color: tema.accent, fontSize: tema.fontSize(12) },
+              ]}
+            >
+              Especialidade
+            </Text>
             <TextInput
-              style={styles.input}
+              accessibilityLabel="Especialidade da profissional"
+              style={[
+                styles.input,
+                {
+                  backgroundColor: tema.bgElevated,
+                  color: tema.textPrimary,
+                  fontSize: tema.fontSize(14),
+                  borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                  minHeight: tema.minTouchHeight,
+                },
+              ]}
               value={especialidadeProf}
               onChangeText={setEspecialidadeProf}
               placeholder="Ex.: Nail Designer / Manicure"
-              placeholderTextColor={COLORS.textMuted}
+              placeholderTextColor={tema.textMuted}
             />
 
-            <View style={styles.linhaInputs}>
+            <View style={[styles.linhaInputs, { gap: 10 + tema.espacoExtra }]}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.label}>Comissão (%)</Text>
+                <Text
+                  style={[
+                    styles.label,
+                    { color: tema.accent, fontSize: tema.fontSize(12) },
+                  ]}
+                >
+                  Comissão (%)
+                </Text>
                 <TextInput
-                  style={styles.input}
+                  accessibilityLabel="Percentual de comissão"
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: tema.bgElevated,
+                      color: tema.textPrimary,
+                      fontSize: tema.fontSize(14),
+                      borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                      minHeight: tema.minTouchHeight,
+                    },
+                  ]}
                   value={comissaoProf}
                   onChangeText={setComissaoProf}
                   placeholder="50"
-                  placeholderTextColor={COLORS.textMuted}
+                  placeholderTextColor={tema.textMuted}
                   keyboardType="decimal-pad"
                 />
               </View>
 
               <View style={{ flex: 1 }}>
-                <Text style={styles.label}>Telefone</Text>
+                <Text
+                  style={[
+                    styles.label,
+                    { color: tema.accent, fontSize: tema.fontSize(12) },
+                  ]}
+                >
+                  Telefone
+                </Text>
                 <TextInput
-                  style={styles.input}
+                  accessibilityLabel="Telefone da profissional"
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: tema.bgElevated,
+                      color: tema.textPrimary,
+                      fontSize: tema.fontSize(14),
+                      borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                      minHeight: tema.minTouchHeight,
+                    },
+                  ]}
                   value={telefoneProf}
                   onChangeText={setTelefoneProf}
                   placeholder="(11) 99999-9999"
-                  placeholderTextColor={COLORS.textMuted}
+                  placeholderTextColor={tema.textMuted}
                   keyboardType="phone-pad"
                 />
               </View>
             </View>
 
-            <Text style={styles.label}>E-mail</Text>
+            <Text
+              style={[
+                styles.label,
+                { color: tema.accent, fontSize: tema.fontSize(12) },
+              ]}
+            >
+              E-mail
+            </Text>
             <TextInput
-              style={styles.input}
+              accessibilityLabel="E-mail da profissional"
+              style={[
+                styles.input,
+                {
+                  backgroundColor: tema.bgElevated,
+                  color: tema.textPrimary,
+                  fontSize: tema.fontSize(14),
+                  borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                  minHeight: tema.minTouchHeight,
+                },
+              ]}
               value={emailProf}
               onChangeText={setEmailProf}
               placeholder="profissional@lirium.com"
-              placeholderTextColor={COLORS.textMuted}
+              placeholderTextColor={tema.textMuted}
               keyboardType="email-address"
               autoCapitalize="none"
             />
 
             <TouchableOpacity
-              style={styles.toggleLinha}
+              hitSlop={tema.hitSlopPadrao}
+              accessibilityRole="checkbox"
+              accessibilityLabel="Profissional ativa na agenda"
+              accessibilityState={{ checked: ativoProf }}
+              style={[
+                styles.toggleLinha,
+                { minHeight: tema.minTouchHeight },
+              ]}
               onPress={() => setAtivoProf((v) => !v)}
             >
               <Ionicons
                 name={ativoProf ? 'checkbox' : 'square-outline'}
                 size={20}
-                color={COLORS.accent}
+                color={tema.accent}
               />
-              <Text style={styles.toggleTexto}>Profissional ativa na agenda</Text>
+              <Text
+                style={[
+                  styles.toggleTexto,
+                  { color: tema.textSecondary, fontSize: tema.fontSize(13) },
+                ]}
+              >
+                Profissional ativa na agenda
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.btnSalvarModal, salvandoProf && { opacity: 0.6 }]}
+              hitSlop={tema.hitSlopPadrao}
+              accessibilityRole="button"
+              accessibilityLabel="Salvar profissional"
+              style={[
+                styles.btnSalvarModal,
+                {
+                  backgroundColor: tema.accent,
+                  minHeight: tema.minTouchHeight,
+                  justifyContent: 'center',
+                },
+                salvandoProf && { opacity: 0.6 },
+              ]}
               onPress={salvarProfissional}
               disabled={salvandoProf}
             >
               {salvandoProf ? (
-                <ActivityIndicator color={COLORS.textOnAccent} />
+                <ActivityIndicator color={tema.textOnAccent} />
               ) : (
-                <Text style={styles.btnSalvarTexto}>Salvar Profissional</Text>
+                <Text
+                  style={[
+                    styles.btnSalvarTexto,
+                    { color: tema.textOnAccent, fontSize: tema.fontSize(15) },
+                  ]}
+                >
+                  Salvar Profissional
+                </Text>
               )}
             </TouchableOpacity>
           </View>
@@ -805,7 +1360,6 @@ export default function CatalogoEquipeAdminScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bgPrimary,
   },
   topBar: {
     flexDirection: 'row',
@@ -813,20 +1367,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: COLORS.bgSurface,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderSubtle,
   },
   topTitle: {
-    fontSize: 18,
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
   },
   iconButton: {
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: COLORS.bgElevated,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -834,13 +1383,11 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: COLORS.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
   abasRow: {
     flexDirection: 'row',
-    gap: 10,
     paddingHorizontal: 20,
     paddingTop: 14,
     paddingBottom: 10,
@@ -853,22 +1400,10 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 10,
     borderRadius: 12,
-    backgroundColor: COLORS.bgSurface,
     borderWidth: 1,
-    borderColor: COLORS.borderSubtle,
-  },
-  abaBtnAtiva: {
-    backgroundColor: COLORS.accent,
-    borderColor: COLORS.accent,
   },
   abaTexto: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
     fontWeight: '600',
-  },
-  abaTextoAtiva: {
-    color: COLORS.textOnAccent,
-    fontWeight: 'bold',
   },
   buscaBox: {
     flexDirection: 'row',
@@ -876,31 +1411,22 @@ const styles = StyleSheet.create({
     gap: 8,
     marginHorizontal: 20,
     marginBottom: 12,
-    backgroundColor: COLORS.bgElevated,
     borderRadius: 12,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: COLORS.borderSubtle,
   },
   buscaInput: {
     flex: 1,
-    color: COLORS.textPrimary,
-    fontSize: 14,
     paddingVertical: 10,
   },
   content: {
     paddingHorizontal: 20,
-    paddingBottom: 40,
   },
-  lista: {
-    gap: 12,
-  },
+  lista: {},
   card: {
-    backgroundColor: COLORS.bgSurface,
     borderRadius: 14,
     padding: 15,
     borderWidth: 1,
-    borderColor: COLORS.borderSubtle,
   },
   cardTopo: {
     flexDirection: 'row',
@@ -910,13 +1436,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   cardTitulo: {
-    color: COLORS.textPrimary,
-    fontSize: 16,
     fontWeight: 'bold',
   },
   cardSub: {
-    color: COLORS.textSecondary,
-    fontSize: 12,
     marginTop: 2,
   },
   statusPill: {
@@ -925,36 +1447,16 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
   },
-  pillAtivo: {
-    backgroundColor: COLORS.successSoft,
-    borderColor: 'rgba(165, 214, 167, 0.35)',
-  },
-  pillInativo: {
-    backgroundColor: COLORS.dangerSoft,
-    borderColor: 'rgba(255, 123, 123, 0.35)',
-  },
   statusTexto: {
-    fontSize: 11,
     fontWeight: 'bold',
   },
-  textoAtivo: {
-    color: COLORS.success,
-  },
-  textoInativo: {
-    color: COLORS.danger,
-  },
   infoLinhaTexto: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
     marginBottom: 4,
   },
   destaqueRosa: {
-    color: COLORS.accent,
     fontWeight: 'bold',
   },
   infoSecundariaTexto: {
-    color: COLORS.textMuted,
-    fontSize: 12,
     marginBottom: 6,
   },
   cardRodape: {
@@ -964,42 +1466,30 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     marginTop: 6,
     borderTopWidth: 1,
-    borderTopColor: COLORS.borderSubtle,
   },
   precoDestaque: {
-    color: COLORS.accent,
-    fontSize: 16,
     fontWeight: 'bold',
   },
   tagPapel: {
-    color: COLORS.textMuted,
-    fontSize: 12,
     fontWeight: '600',
   },
   acoesRow: {
     flexDirection: 'row',
-    gap: 8,
   },
   btnEditar: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: COLORS.accentSoft,
     borderWidth: 1,
-    borderColor: COLORS.accentBorder,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
   },
   btnEditarTexto: {
-    color: COLORS.accent,
-    fontSize: 12,
     fontWeight: 'bold',
   },
   btnExcluir: {
-    backgroundColor: COLORS.dangerSoft,
     borderWidth: 1,
-    borderColor: 'rgba(255, 123, 123, 0.35)',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
@@ -1013,13 +1503,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   estadoTitulo: {
-    color: COLORS.textPrimary,
-    fontSize: 16,
     fontWeight: 'bold',
   },
   estadoTexto: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
     textAlign: 'center',
   },
   modalOverlay: {
@@ -1029,11 +1515,9 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalCard: {
-    backgroundColor: COLORS.bgSurface,
     borderRadius: 16,
     padding: 18,
     borderWidth: 1,
-    borderColor: COLORS.accentBorder,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1042,31 +1526,22 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   modalTitulo: {
-    color: COLORS.textPrimary,
-    fontSize: 18,
     fontWeight: 'bold',
   },
   label: {
-    color: COLORS.accent,
-    fontSize: 12,
     fontWeight: 'bold',
     marginBottom: 6,
     marginTop: 4,
   },
   input: {
-    backgroundColor: COLORS.bgElevated,
-    color: COLORS.textPrimary,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 14,
     borderWidth: 1,
-    borderColor: COLORS.borderSubtle,
     marginBottom: 10,
   },
   linhaInputs: {
     flexDirection: 'row',
-    gap: 10,
   },
   toggleLinha: {
     flexDirection: 'row',
@@ -1075,19 +1550,13 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 16,
   },
-  toggleTexto: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
-  },
+  toggleTexto: {},
   btnSalvarModal: {
-    backgroundColor: COLORS.accent,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
   },
   btnSalvarTexto: {
-    color: COLORS.textOnAccent,
-    fontSize: 15,
     fontWeight: 'bold',
   },
 });

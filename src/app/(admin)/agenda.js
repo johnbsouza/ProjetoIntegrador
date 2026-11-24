@@ -22,27 +22,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { db } from '../../config/firebase';
-
-const COLORS = {
-  bgPrimary: '#1E201E',
-  bgSurface: '#2A2D2A',
-  bgElevated: '#343834',
-  bgDark: '#161816',
-  borderSubtle: 'rgba(255,255,255,0.08)',
-  accent: '#FF98B9',
-  accentSoft: 'rgba(255, 152, 185, 0.15)',
-  accentBorder: 'rgba(255, 152, 185, 0.42)',
-  textPrimary: '#FFFFFF',
-  textSecondary: '#C8CCC8',
-  textMuted: '#8E938E',
-  textOnAccent: '#1E201E',
-  success: '#A5D6A7',
-  successSoft: 'rgba(165, 214, 167, 0.14)',
-  danger: '#FF7B7B',
-  dangerSoft: 'rgba(255, 123, 123, 0.14)',
-  info: '#90CAF9',
-  infoSoft: 'rgba(144, 202, 249, 0.14)',
-};
+import { useAcessibilidade } from '../../context/AcessibilidadeContext';
 
 const DIAS_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 const MESES = [
@@ -82,22 +62,31 @@ function rotuloStatus(statusNorm) {
   return 'Confirmado';
 }
 
-function getEstiloStatus(statusNorm) {
+function getEstiloStatus(statusNorm, tema, altoContraste) {
   switch (statusNorm) {
     case 'concluido':
       return {
-        pill: { backgroundColor: COLORS.infoSoft, borderColor: 'rgba(144, 202, 249, 0.35)' },
-        texto: { color: COLORS.info },
+        pill: {
+          backgroundColor: tema.infoSoft,
+          borderColor: altoContraste ? tema.info : 'rgba(144, 202, 249, 0.35)',
+        },
+        texto: { color: tema.info },
       };
     case 'cancelado':
       return {
-        pill: { backgroundColor: COLORS.dangerSoft, borderColor: 'rgba(255, 123, 123, 0.35)' },
-        texto: { color: COLORS.danger },
+        pill: {
+          backgroundColor: tema.dangerSoft,
+          borderColor: altoContraste ? tema.danger : 'rgba(255, 123, 123, 0.35)',
+        },
+        texto: { color: tema.danger },
       };
     default:
       return {
-        pill: { backgroundColor: COLORS.successSoft, borderColor: 'rgba(165, 214, 167, 0.35)' },
-        texto: { color: COLORS.success },
+        pill: {
+          backgroundColor: tema.successSoft,
+          borderColor: altoContraste ? tema.success : 'rgba(165, 214, 167, 0.35)',
+        },
+        texto: { color: tema.success },
       };
   }
 }
@@ -128,6 +117,7 @@ function gerarGradeDoMes(ano, mes, hojeIso) {
 
 export default function AdminAgendaGeralScreen() {
   const router = useRouter();
+  const { tema, config } = useAcessibilidade();
   const hojeIso = useMemo(() => obterHojeIso(), []);
 
   const [mesVisivel, setMesVisivel] = useState(() => {
@@ -315,56 +305,131 @@ export default function AdminAgendaGeralScreen() {
   }, [diaSelecionadoIso]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.topBar}>
+    <SafeAreaView style={[styles.container, { backgroundColor: tema.bgPrimary }]}>
+      <View
+        style={[
+          styles.topBar,
+          {
+            backgroundColor: tema.bgSurface,
+            borderBottomColor: tema.borderSubtle,
+          },
+        ]}
+      >
         <TouchableOpacity
           onPress={() => router.back()}
-          style={styles.iconButton}
-          accessibilityLabel="Voltar"
+          hitSlop={tema.hitSlopPadrao}
+          accessibilityRole="button"
+          accessibilityLabel="Voltar para a tela anterior"
+          style={[
+            styles.iconButton,
+            {
+              backgroundColor: tema.bgElevated,
+              minWidth: tema.minTouchHeight,
+              minHeight: tema.minTouchHeight,
+              borderWidth: config.altoContraste ? 1 : 0,
+              borderColor: tema.borderSubtle,
+            },
+          ]}
         >
-          <Ionicons name="arrow-back" size={22} color={COLORS.textPrimary} />
+          <Ionicons name="arrow-back" size={22} color={tema.textPrimary} />
         </TouchableOpacity>
 
-        <Text style={styles.topTitle}>Agenda Geral</Text>
+        <Text
+          accessibilityRole="header"
+          style={[
+            styles.topTitle,
+            { color: tema.textPrimary, fontSize: tema.fontSize(18) },
+          ]}
+        >
+          Agenda Geral
+        </Text>
 
         <TouchableOpacity
           onPress={irParaHoje}
-          style={styles.hojePill}
-          accessibilityLabel="Ir para hoje"
+          hitSlop={tema.hitSlopPadrao}
+          accessibilityRole="button"
+          accessibilityLabel="Ir para a data de hoje"
+          style={[
+            styles.hojePill,
+            {
+              backgroundColor: tema.accentSoft,
+              borderColor: tema.accentBorder,
+              minHeight: tema.minTouchHeight,
+              justifyContent: 'center',
+            },
+          ]}
         >
-          <Text style={styles.hojePillTexto}>Hoje</Text>
+          <Text
+            style={[
+              styles.hojePillTexto,
+              { color: tema.accent, fontSize: tema.fontSize(12) },
+            ]}
+          >
+            Hoje
+          </Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: 88 + tema.espacoExtra },
+        ]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={atualizando}
             onRefresh={handleRefresh}
-            tintColor={COLORS.accent}
-            colors={[COLORS.accent]}
+            tintColor={tema.accent}
+            colors={[tema.accent]}
           />
         }
       >
-        <Text style={styles.secaoLabel}>Profissionais do Salão</Text>
+        <Text
+          style={[
+            styles.secaoLabel,
+            { color: tema.accent, fontSize: tema.fontSize(12) },
+          ]}
+        >
+          Profissionais do Salão
+        </Text>
+
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chipsRow}
+          contentContainerStyle={[styles.chipsRow, { gap: 8 + tema.espacoExtra }]}
         >
           <TouchableOpacity
+            hitSlop={tema.hitSlopPadrao}
+            accessibilityRole="button"
+            accessibilityLabel={`Filtrar por todas as profissionais, total ${profissionais.length}`}
+            accessibilityState={{ selected: profissionalFiltroId === 'TODAS' }}
             style={[
               styles.chipProf,
-              profissionalFiltroId === 'TODAS' && styles.chipProfAtivo,
+              {
+                minHeight: tema.minTouchHeight,
+                justifyContent: 'center',
+                backgroundColor:
+                  profissionalFiltroId === 'TODAS' ? tema.accent : tema.bgSurface,
+                borderColor:
+                  profissionalFiltroId === 'TODAS'
+                    ? tema.accent
+                    : tema.borderSubtle,
+              },
             ]}
             onPress={() => setProfissionalFiltroId('TODAS')}
           >
             <Text
               style={[
                 styles.chipProfTexto,
-                profissionalFiltroId === 'TODAS' && styles.chipProfTextoAtivo,
+                {
+                  fontSize: tema.fontSize(12),
+                  color:
+                    profissionalFiltroId === 'TODAS'
+                      ? tema.textOnAccent
+                      : tema.textSecondary,
+                  fontWeight: profissionalFiltroId === 'TODAS' ? 'bold' : '600',
+                },
               ]}
             >
               Todas ({profissionais.length})
@@ -373,44 +438,113 @@ export default function AdminAgendaGeralScreen() {
 
           {profissionais.map((prof) => {
             const ativo = profissionalFiltroId === prof.id;
+            const nomeProf = prof.nome || 'Profissional';
             return (
               <TouchableOpacity
                 key={prof.id}
-                style={[styles.chipProf, ativo && styles.chipProfAtivo]}
+                hitSlop={tema.hitSlopPadrao}
+                accessibilityRole="button"
+                accessibilityLabel={`Filtrar agenda por ${nomeProf}`}
+                accessibilityState={{ selected: ativo }}
+                style={[
+                  styles.chipProf,
+                  {
+                    minHeight: tema.minTouchHeight,
+                    justifyContent: 'center',
+                    backgroundColor: ativo ? tema.accent : tema.bgSurface,
+                    borderColor: ativo ? tema.accent : tema.borderSubtle,
+                  },
+                ]}
                 onPress={() => setProfissionalFiltroId(prof.id)}
               >
                 <Text
                   style={[
                     styles.chipProfTexto,
-                    ativo && styles.chipProfTextoAtivo,
+                    {
+                      fontSize: tema.fontSize(12),
+                      color: ativo ? tema.textOnAccent : tema.textSecondary,
+                      fontWeight: ativo ? 'bold' : '600',
+                    },
                   ]}
                 >
-                  {prof.nome || 'Profissional'}
+                  {nomeProf}
                 </Text>
               </TouchableOpacity>
             );
           })}
         </ScrollView>
 
-        <View style={styles.calendarioCard}>
+        <View
+          style={[
+            styles.calendarioCard,
+            {
+              backgroundColor: tema.bgSurface,
+              borderColor: tema.borderSubtle,
+              marginBottom: 14 + tema.espacoExtra,
+            },
+          ]}
+        >
           <View style={styles.calendarioHeader}>
-            <TouchableOpacity onPress={() => mudarMes(-1)} style={styles.botaoMes}>
-              <Ionicons name="chevron-back" size={18} color={COLORS.textPrimary} />
+            <TouchableOpacity
+              onPress={() => mudarMes(-1)}
+              hitSlop={tema.hitSlopPadrao}
+              accessibilityRole="button"
+              accessibilityLabel="Mês anterior"
+              style={[
+                styles.botaoMes,
+                {
+                  backgroundColor: tema.bgElevated,
+                  minWidth: tema.minTouchHeight,
+                  minHeight: tema.minTouchHeight,
+                  borderWidth: config.altoContraste ? 1 : 0,
+                  borderColor: tema.borderSubtle,
+                },
+              ]}
+            >
+              <Ionicons name="chevron-back" size={18} color={tema.textPrimary} />
             </TouchableOpacity>
 
-            <Text style={styles.calendarioMesTitulo}>
+            <Text
+              accessibilityRole="header"
+              style={[
+                styles.calendarioMesTitulo,
+                { color: tema.textPrimary, fontSize: tema.fontSize(16) },
+              ]}
+            >
               {MESES[mesVisivel.mes]} {mesVisivel.ano}
             </Text>
 
-            <TouchableOpacity onPress={() => mudarMes(1)} style={styles.botaoMes}>
-              <Ionicons name="chevron-forward" size={18} color={COLORS.textPrimary} />
+            <TouchableOpacity
+              onPress={() => mudarMes(1)}
+              hitSlop={tema.hitSlopPadrao}
+              accessibilityRole="button"
+              accessibilityLabel="Próximo mês"
+              style={[
+                styles.botaoMes,
+                {
+                  backgroundColor: tema.bgElevated,
+                  minWidth: tema.minTouchHeight,
+                  minHeight: tema.minTouchHeight,
+                  borderWidth: config.altoContraste ? 1 : 0,
+                  borderColor: tema.borderSubtle,
+                },
+              ]}
+            >
+              <Ionicons name="chevron-forward" size={18} color={tema.textPrimary} />
             </TouchableOpacity>
           </View>
 
           <View style={styles.calendarioLinha}>
             {DIAS_SEMANA.map((d) => (
               <View key={d} style={styles.celulaCalendario}>
-                <Text style={styles.cabecalhoSemana}>{d}</Text>
+                <Text
+                  style={[
+                    styles.cabecalhoSemana,
+                    { color: tema.textMuted, fontSize: tema.fontSize(11) },
+                  ]}
+                >
+                  {d}
+                </Text>
               </View>
             ))}
           </View>
@@ -423,21 +557,42 @@ export default function AdminAgendaGeralScreen() {
 
               const selecionado = diaSelecionadoIso === diaObj.iso;
               const qtdMarcacoes = contagemPorDia.get(diaObj.iso) || 0;
+              const descricaoDia = `${diaObj.formatada}${
+                diaObj.ehHoje ? ', hoje' : ''
+              }${
+                qtdMarcacoes > 0
+                  ? `, ${qtdMarcacoes} ${qtdMarcacoes === 1 ? 'agendamento' : 'agendamentos'}`
+                  : ', sem agendamentos'
+              }`;
 
               return (
                 <View key={diaObj.iso} style={styles.celulaCalendario}>
                   <TouchableOpacity
                     onPress={() => setDiaSelecionadoIso(diaObj.iso)}
+                    accessibilityRole="button"
+                    accessibilityLabel={descricaoDia}
+                    accessibilityState={{ selected: selecionado }}
                     style={[
                       styles.cardDia,
-                      diaObj.ehHoje && styles.cardDiaHoje,
-                      selecionado && styles.cardDiaSelecionado,
+                      {
+                        backgroundColor: selecionado ? tema.accent : tema.bgElevated,
+                        borderColor: selecionado
+                          ? tema.accent
+                          : diaObj.ehHoje
+                          ? tema.accentBorder
+                          : config.altoContraste
+                          ? tema.borderSubtle
+                          : 'transparent',
+                      },
                     ]}
                   >
                     <Text
                       style={[
                         styles.diaNumeroTexto,
-                        selecionado && styles.textoEscuro,
+                        {
+                          fontSize: tema.fontSize(13),
+                          color: selecionado ? tema.textOnAccent : tema.textPrimary,
+                        },
                       ]}
                     >
                       {diaObj.diaNumero}
@@ -447,7 +602,11 @@ export default function AdminAgendaGeralScreen() {
                       <View
                         style={[
                           styles.pontoEvento,
-                          selecionado && styles.pontoEventoSelecionado,
+                          {
+                            backgroundColor: selecionado
+                              ? tema.textOnAccent
+                              : tema.accent,
+                          },
                         ]}
                       />
                     )}
@@ -458,20 +617,59 @@ export default function AdminAgendaGeralScreen() {
           </View>
         </View>
 
-        <View style={styles.resumoDiaCard}>
+        <View
+          accessible
+          accessibilityLabel={`Resumo do dia ${diaFormatadoExibicao}: ${resumoDiaSelecionado.ativos} ativos de ${resumoDiaSelecionado.total} registros, receita prevista ${formatarMoeda(resumoDiaSelecionado.faturamentoDia)}`}
+          style={[
+            styles.resumoDiaCard,
+            {
+              backgroundColor: tema.bgSurface,
+              borderColor: tema.accentBorder,
+              marginBottom: 12 + tema.espacoExtra,
+            },
+          ]}
+        >
           <View style={{ flex: 1 }}>
-            <Text style={styles.resumoDiaTitulo}>{diaFormatadoExibicao}</Text>
-            <Text style={styles.resumoDiaSub}>
-              {resumoDiaSelecionado.ativos}{' '}
-              {resumoDiaSelecionado.ativos === 1 ? 'ativo' : 'ativos'} •{' '}
-              {resumoDiaSelecionado.total}{' '}
-              {resumoDiaSelecionado.total === 1 ? 'registro' : 'registros'}
+            <Text
+              style={[
+                styles.resumoDiaTitulo,
+                { color: tema.textPrimary, fontSize: tema.fontSize(15) },
+              ]}
+            >
+              {diaFormatadoExibicao}
             </Text>
+            {!config.modoCalmo && (
+              <Text
+                style={[
+                  styles.resumoDiaSub,
+                  { color: tema.textSecondary, fontSize: tema.fontSize(12) },
+                ]}
+              >
+                {resumoDiaSelecionado.ativos}{' '}
+                {resumoDiaSelecionado.ativos === 1 ? 'ativo' : 'ativos'} •{' '}
+                {resumoDiaSelecionado.total}{' '}
+                {resumoDiaSelecionado.total === 1 ? 'registro' : 'registros'}
+              </Text>
+            )}
           </View>
 
           <View style={{ alignItems: 'flex-end' }}>
-            <Text style={styles.resumoDiaValorLabel}>Receita prevista</Text>
-            <Text style={styles.resumoDiaValor}>
+            {!config.modoCalmo && (
+              <Text
+                style={[
+                  styles.resumoDiaValorLabel,
+                  { color: tema.textMuted, fontSize: tema.fontSize(11) },
+                ]}
+              >
+                Receita prevista
+              </Text>
+            )}
+            <Text
+              style={[
+                styles.resumoDiaValor,
+                { color: tema.accent, fontSize: tema.fontSize(16) },
+              ]}
+            >
               {formatarMoeda(resumoDiaSelecionado.faturamentoDia)}
             </Text>
           </View>
@@ -480,20 +678,39 @@ export default function AdminAgendaGeralScreen() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.statusFilterRow}
+          contentContainerStyle={[
+            styles.statusFilterRow,
+            { gap: 8 + tema.espacoExtra },
+          ]}
         >
           {FILTROS_STATUS.map((f) => {
             const ativo = statusFiltro === f.key;
             return (
               <TouchableOpacity
                 key={f.key}
-                style={[styles.statusChip, ativo && styles.statusChipAtivo]}
+                hitSlop={tema.hitSlopPadrao}
+                accessibilityRole="button"
+                accessibilityLabel={`Filtrar por status ${f.label}`}
+                accessibilityState={{ selected: ativo }}
+                style={[
+                  styles.statusChip,
+                  {
+                    minHeight: tema.minTouchHeight,
+                    justifyContent: 'center',
+                    backgroundColor: ativo ? tema.accentSoft : tema.bgElevated,
+                    borderColor: ativo ? tema.accentBorder : tema.borderSubtle,
+                  },
+                ]}
                 onPress={() => setStatusFiltro(f.key)}
               >
                 <Text
                   style={[
                     styles.statusChipTexto,
-                    ativo && styles.statusChipTextoAtivo,
+                    {
+                      fontSize: tema.fontSize(12),
+                      color: ativo ? tema.accent : tema.textSecondary,
+                      fontWeight: ativo ? 'bold' : '600',
+                    },
                   ]}
                 >
                   {f.label}
@@ -505,23 +722,53 @@ export default function AdminAgendaGeralScreen() {
 
         {carregando ? (
           <View style={styles.centro}>
-            <ActivityIndicator size="large" color={COLORS.accent} />
-            <Text style={styles.estadoTexto}>Sincronizando agenda do salão...</Text>
+            <ActivityIndicator size="large" color={tema.accent} />
+            <Text
+              style={[
+                styles.estadoTexto,
+                { color: tema.textSecondary, fontSize: tema.fontSize(13) },
+              ]}
+            >
+              Sincronizando agenda do salão...
+            </Text>
           </View>
         ) : agendamentosFiltrados.length === 0 ? (
           <View style={styles.centro}>
-            <Ionicons name="calendar-clear-outline" size={44} color={COLORS.textMuted} />
-            <Text style={styles.estadoTitulo}>Nenhum atendimento encontrado</Text>
-            <Text style={styles.estadoTexto}>
-              Sem registros para {diaFormatadoExibicao} com os filtros selecionados.
+            <Ionicons
+              name="calendar-clear-outline"
+              size={44}
+              color={tema.textMuted}
+            />
+            <Text
+              style={[
+                styles.estadoTitulo,
+                { color: tema.textPrimary, fontSize: tema.fontSize(16) },
+              ]}
+            >
+              Nenhum atendimento encontrado
             </Text>
+            {!config.modoCalmo && (
+              <Text
+                style={[
+                  styles.estadoTexto,
+                  { color: tema.textSecondary, fontSize: tema.fontSize(13) },
+                ]}
+              >
+                Sem registros para {diaFormatadoExibicao} com os filtros selecionados.
+              </Text>
+            )}
           </View>
         ) : (
-          <View style={styles.listaAgendamentos}>
+          <View style={[styles.listaAgendamentos, { gap: 12 + tema.espacoExtra }]}>
             {agendamentosFiltrados.map((item) => {
               const statusNorm = normalizarStatus(item.status);
-              const estiloStatus = getEstiloStatus(statusNorm);
-              const encerrado = statusNorm === 'concluido' || statusNorm === 'cancelado';
+              const estiloStatus = getEstiloStatus(
+                statusNorm,
+                tema,
+                config.altoContraste
+              );
+              const encerrado =
+                statusNorm === 'concluido' || statusNorm === 'cancelado';
               const estaProcessando = processandoId === item.id;
 
               const profId = item.idProfissional || item.profissionalId || '';
@@ -538,55 +785,145 @@ export default function AdminAgendaGeralScreen() {
                   key={item.id}
                   style={[
                     styles.cardAgendamento,
-                    statusNorm === 'cancelado' && styles.cardCancelado,
+                    {
+                      backgroundColor:
+                        statusNorm === 'cancelado' ? tema.bgDark : tema.bgSurface,
+                      borderColor: tema.borderSubtle,
+                      opacity:
+                        statusNorm === 'cancelado' && !config.altoContraste
+                          ? 0.68
+                          : 1,
+                    },
                   ]}
                 >
                   <View style={styles.cardTopo}>
-                    <View style={styles.horarioBadge}>
-                      <Ionicons name="time-outline" size={14} color={COLORS.accent} />
-                      <Text style={styles.horarioTexto}>{item.horario || '--:--'}</Text>
+                    <View
+                      style={[
+                        styles.horarioBadge,
+                        {
+                          backgroundColor: tema.accentSoft,
+                          borderColor: tema.accentBorder,
+                        },
+                      ]}
+                    >
+                      <Ionicons name="time-outline" size={14} color={tema.accent} />
+                      <Text
+                        style={[
+                          styles.horarioTexto,
+                          { color: tema.accent, fontSize: tema.fontSize(13) },
+                        ]}
+                      >
+                        {item.horario || '--:--'}
+                      </Text>
                     </View>
 
                     <View style={[styles.statusPill, estiloStatus.pill]}>
-                      <Text style={[styles.statusTexto, estiloStatus.texto]}>
+                      <Text
+                        style={[
+                          styles.statusTexto,
+                          estiloStatus.texto,
+                          { fontSize: tema.fontSize(11) },
+                        ]}
+                      >
                         {rotuloStatus(statusNorm)}
                       </Text>
                     </View>
                   </View>
 
-                  <Text style={styles.clienteNome}>{nomeCli}</Text>
-                  <Text style={styles.servicoTexto}>{nomeServ}</Text>
+                  <Text
+                    style={[
+                      styles.clienteNome,
+                      { color: tema.textPrimary, fontSize: tema.fontSize(16) },
+                    ]}
+                  >
+                    {nomeCli}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.servicoTexto,
+                      { color: tema.textSecondary, fontSize: tema.fontSize(13) },
+                    ]}
+                  >
+                    {nomeServ}
+                  </Text>
 
                   <View style={styles.profLinha}>
-                    <Ionicons name="sparkles" size={13} color={COLORS.accent} />
-                    <Text style={styles.profTexto}>{nomeProf}</Text>
+                    <Ionicons name="sparkles" size={13} color={tema.accent} />
+                    <Text
+                      style={[
+                        styles.profTexto,
+                        { color: tema.accent, fontSize: tema.fontSize(12) },
+                      ]}
+                    >
+                      {nomeProf}
+                    </Text>
                   </View>
 
-                  <View style={styles.cardRodape}>
-                    <Text style={styles.precoTexto}>{formatarMoeda(item.preco)}</Text>
+                  <View
+                    style={[
+                      styles.cardRodape,
+                      { borderTopColor: tema.borderSubtle },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.precoTexto,
+                        { color: tema.textPrimary, fontSize: tema.fontSize(15) },
+                      ]}
+                    >
+                      {formatarMoeda(item.preco)}
+                    </Text>
 
                     {!encerrado && (
-                      <View style={styles.acoesRow}>
+                      <View style={[styles.acoesRow, { gap: 8 + tema.espacoExtra }]}>
                         <TouchableOpacity
-                          style={styles.botaoCheck}
+                          hitSlop={tema.hitSlopPadrao}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Concluir agendamento de ${nomeCli} às ${item.horario || ''}`}
+                          style={[
+                            styles.botaoCheck,
+                            {
+                              backgroundColor: tema.accent,
+                              minWidth: tema.minTouchHeight,
+                              minHeight: tema.minTouchHeight,
+                            },
+                          ]}
                           onPress={() => confirmarAlteracaoStatus(item, 'concluido')}
                           disabled={estaProcessando}
-                          accessibilityLabel="Concluir agendamento"
                         >
                           {estaProcessando ? (
-                            <ActivityIndicator size="small" color={COLORS.textOnAccent} />
+                            <ActivityIndicator
+                              size="small"
+                              color={tema.textOnAccent}
+                            />
                           ) : (
-                            <Ionicons name="checkmark" size={16} color={COLORS.textOnAccent} />
+                            <Ionicons
+                              name="checkmark"
+                              size={18}
+                              color={tema.textOnAccent}
+                            />
                           )}
                         </TouchableOpacity>
 
                         <TouchableOpacity
-                          style={styles.botaoCancelar}
+                          hitSlop={tema.hitSlopPadrao}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Cancelar agendamento de ${nomeCli} às ${item.horario || ''}`}
+                          style={[
+                            styles.botaoCancelar,
+                            {
+                              backgroundColor: tema.dangerSoft,
+                              borderColor: config.altoContraste
+                                ? tema.danger
+                                : 'rgba(255, 123, 123, 0.35)',
+                              minWidth: tema.minTouchHeight,
+                              minHeight: tema.minTouchHeight,
+                            },
+                          ]}
                           onPress={() => confirmarAlteracaoStatus(item, 'cancelado')}
                           disabled={estaProcessando}
-                          accessibilityLabel="Cancelar agendamento"
                         >
-                          <Ionicons name="close" size={16} color={COLORS.danger} />
+                          <Ionicons name="close" size={18} color={tema.danger} />
                         </TouchableOpacity>
                       </View>
                     )}
@@ -604,7 +941,6 @@ export default function AdminAgendaGeralScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bgPrimary,
   },
   topBar: {
     flexDirection: 'row',
@@ -612,80 +948,52 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: COLORS.bgSurface,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderSubtle,
   },
   topTitle: {
-    fontSize: 18,
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
   },
   iconButton: {
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: COLORS.bgElevated,
     alignItems: 'center',
     justifyContent: 'center',
   },
   hojePill: {
-    backgroundColor: COLORS.accentSoft,
     borderWidth: 1,
-    borderColor: COLORS.accentBorder,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 10,
   },
   hojePillTexto: {
-    color: COLORS.accent,
-    fontSize: 12,
     fontWeight: 'bold',
   },
   content: {
     padding: 20,
-    paddingBottom: 40,
   },
   secaoLabel: {
-    color: COLORS.accent,
-    fontSize: 12,
     fontWeight: 'bold',
     textTransform: 'uppercase',
     letterSpacing: 0.6,
     marginBottom: 8,
   },
   chipsRow: {
-    gap: 8,
     paddingBottom: 14,
   },
   chipProf: {
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: COLORS.bgSurface,
     borderWidth: 1,
-    borderColor: COLORS.borderSubtle,
-  },
-  chipProfAtivo: {
-    backgroundColor: COLORS.accent,
-    borderColor: COLORS.accent,
   },
   chipProfTexto: {
-    color: COLORS.textSecondary,
-    fontSize: 12,
     fontWeight: '600',
   },
-  chipProfTextoAtivo: {
-    color: COLORS.textOnAccent,
-    fontWeight: 'bold',
-  },
   calendarioCard: {
-    backgroundColor: COLORS.bgSurface,
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
-    borderColor: COLORS.borderSubtle,
-    marginBottom: 14,
   },
   calendarioHeader: {
     flexDirection: 'row',
@@ -694,15 +1002,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   calendarioMesTitulo: {
-    color: COLORS.textPrimary,
-    fontSize: 16,
     fontWeight: 'bold',
   },
   botaoMes: {
     width: 32,
     height: 32,
     borderRadius: 9,
-    backgroundColor: COLORS.bgElevated,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -716,115 +1021,62 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cabecalhoSemana: {
-    color: COLORS.textMuted,
-    fontSize: 11,
     fontWeight: '700',
     paddingBottom: 6,
   },
   cardDia: {
     width: '100%',
     aspectRatio: 1,
-    backgroundColor: COLORS.bgElevated,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  cardDiaHoje: {
-    borderColor: COLORS.accentBorder,
-  },
-  cardDiaSelecionado: {
-    backgroundColor: COLORS.accent,
-    borderColor: COLORS.accent,
   },
   diaNumeroTexto: {
-    color: COLORS.textPrimary,
-    fontSize: 13,
     fontWeight: '700',
-  },
-  textoEscuro: {
-    color: COLORS.textOnAccent,
   },
   pontoEvento: {
     width: 5,
     height: 5,
     borderRadius: 3,
-    backgroundColor: COLORS.accent,
     marginTop: 2,
-  },
-  pontoEventoSelecionado: {
-    backgroundColor: COLORS.textOnAccent,
   },
   resumoDiaCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: COLORS.bgSurface,
     padding: 14,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: COLORS.accentBorder,
-    marginBottom: 12,
   },
   resumoDiaTitulo: {
-    color: COLORS.textPrimary,
-    fontSize: 15,
     fontWeight: 'bold',
   },
   resumoDiaSub: {
-    color: COLORS.textSecondary,
-    fontSize: 12,
     marginTop: 2,
   },
-  resumoDiaValorLabel: {
-    color: COLORS.textMuted,
-    fontSize: 11,
-  },
+  resumoDiaValorLabel: {},
   resumoDiaValor: {
-    color: COLORS.accent,
-    fontSize: 16,
     fontWeight: 'bold',
     marginTop: 2,
   },
   statusFilterRow: {
-    gap: 8,
     paddingBottom: 14,
   },
   statusChip: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
-    backgroundColor: COLORS.bgElevated,
     borderWidth: 1,
-    borderColor: COLORS.borderSubtle,
-  },
-  statusChipAtivo: {
-    backgroundColor: COLORS.accentSoft,
-    borderColor: COLORS.accentBorder,
   },
   statusChipTexto: {
-    color: COLORS.textSecondary,
-    fontSize: 12,
     fontWeight: '600',
   },
-  statusChipTextoAtivo: {
-    color: COLORS.accent,
-    fontWeight: 'bold',
-  },
-  listaAgendamentos: {
-    gap: 12,
-  },
+  listaAgendamentos: {},
   cardAgendamento: {
-    backgroundColor: COLORS.bgSurface,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: COLORS.borderSubtle,
-  },
-  cardCancelado: {
-    opacity: 0.68,
-    backgroundColor: COLORS.bgDark,
   },
   cardTopo: {
     flexDirection: 'row',
@@ -836,16 +1088,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: COLORS.accentSoft,
     borderWidth: 1,
-    borderColor: COLORS.accentBorder,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 10,
   },
   horarioTexto: {
-    color: COLORS.accent,
-    fontSize: 13,
     fontWeight: 'bold',
   },
   statusPill: {
@@ -855,18 +1103,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   statusTexto: {
-    fontSize: 11,
     fontWeight: 'bold',
   },
   clienteNome: {
-    color: COLORS.textPrimary,
-    fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 3,
   },
   servicoTexto: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
     marginBottom: 8,
   },
   profLinha: {
@@ -876,8 +1119,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   profTexto: {
-    color: COLORS.accent,
-    fontSize: 12,
     fontWeight: '600',
   },
   cardRodape: {
@@ -886,22 +1127,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: COLORS.borderSubtle,
   },
   precoTexto: {
-    color: COLORS.textPrimary,
-    fontSize: 15,
     fontWeight: 'bold',
   },
   acoesRow: {
     flexDirection: 'row',
-    gap: 8,
   },
   botaoCheck: {
     width: 34,
     height: 34,
     borderRadius: 12,
-    backgroundColor: COLORS.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -909,9 +1145,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 12,
-    backgroundColor: COLORS.dangerSoft,
     borderWidth: 1,
-    borderColor: 'rgba(255, 123, 123, 0.35)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -922,13 +1156,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   estadoTitulo: {
-    color: COLORS.textPrimary,
-    fontSize: 16,
     fontWeight: 'bold',
   },
   estadoTexto: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
     textAlign: 'center',
   },
 });

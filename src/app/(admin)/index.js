@@ -19,24 +19,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth, db } from '../../config/firebase';
-
-const COLORS = {
-  bgPrimary: '#434643',
-  bgSurface: '#595959',
-  bgElevated: '#383B38',
-  bgDark: '#2B2D2B',
-  borderSubtle: '#6B6E6B',
-  borderSoft: 'rgba(255,255,255,0.08)',
-  accent: '#FF98B9',
-  accentSoft: 'rgba(255, 152, 185, 0.14)',
-  accentBorder: 'rgba(255, 152, 185, 0.35)',
-  textPrimary: '#FFFFFF',
-  textSecondary: '#D1D1D1',
-  textMuted: '#A0A3A0',
-  textOnAccent: '#1E201E',
-  success: '#A5D6A7',
-  info: '#90CAF9',
-};
+import { useAcessibilidade } from '../../context/AcessibilidadeContext';
 
 const DIAS_SEMANA = [
   'Domingo',
@@ -75,6 +58,7 @@ function normalizarStatus(status) {
 export default function AdminDashboardScreen() {
   const router = useRouter();
   const navigation = useNavigation();
+  const { tema, config } = useAcessibilidade();
   const usuarioAtual = auth.currentUser;
   const infoHoje = useMemo(() => obterInfoHoje(), []);
 
@@ -184,140 +168,390 @@ export default function AdminDashboardScreen() {
   const carregando = carregandoAgenda || carregandoClientes;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.topBar}>
+    <SafeAreaView style={[styles.container, { backgroundColor: tema.bgPrimary }]}>
+      <View
+        style={[
+          styles.topBar,
+          {
+            backgroundColor: tema.bgSurface,
+            borderBottomColor: tema.borderSubtle,
+          },
+        ]}
+      >
         <View style={styles.topEsquerda}>
           <TouchableOpacity
             onPress={abrirMenuLateral}
-            style={styles.menuButton}
-            accessibilityLabel="Abrir menu"
+            hitSlop={tema.hitSlopPadrao}
+            accessibilityRole="button"
+            accessibilityLabel="Abrir menu lateral"
+            style={[
+              styles.menuButton,
+              {
+                minWidth: tema.minTouchHeight,
+                minHeight: tema.minTouchHeight,
+                alignItems: 'center',
+                justifyContent: 'center',
+              },
+            ]}
           >
-            <Ionicons name="menu" size={26} color={COLORS.textPrimary} />
+            <Ionicons name="menu" size={26} color={tema.textPrimary} />
           </TouchableOpacity>
 
-          <View>
-            <Text style={styles.topSubtitulo}>Painel Administrativo</Text>
-            <Text style={styles.topTitle}>Lirium Esmalteria & Spa</Text>
+          <View style={{ flex: 1 }}>
+            {!config.modoCalmo && (
+              <Text
+                style={[
+                  styles.topSubtitulo,
+                  { color: tema.textSecondary, fontSize: tema.fontSize(12) },
+                ]}
+              >
+                Painel Administrativo
+              </Text>
+            )}
+            <Text
+              accessibilityRole="header"
+              style={[
+                styles.topTitle,
+                { color: tema.textPrimary, fontSize: tema.fontSize(19) },
+              ]}
+            >
+              Lirium Esmalteria & Spa
+            </Text>
           </View>
         </View>
 
         <TouchableOpacity
           onPress={() => router.push('./perfil')}
-          style={styles.perfilButton}
-          accessibilityLabel="Perfil do administrador"
+          hitSlop={tema.hitSlopPadrao}
+          accessibilityRole="button"
+          accessibilityLabel="Abrir perfil do administrador"
+          style={[
+            styles.perfilButton,
+            {
+              minWidth: tema.minTouchHeight,
+              minHeight: tema.minTouchHeight,
+              alignItems: 'center',
+              justifyContent: 'center',
+            },
+          ]}
         >
-          <Ionicons name="person-circle-outline" size={28} color={COLORS.accent} />
+          <Ionicons name="person-circle-outline" size={28} color={tema.accent} />
         </TouchableOpacity>
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: 88 + tema.espacoExtra },
+        ]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={atualizando}
             onRefresh={handleRefresh}
-            tintColor={COLORS.accent}
-            colors={[COLORS.accent]}
+            tintColor={tema.accent}
+            colors={[tema.accent]}
           />
         }
       >
-        <View style={styles.dataBanner}>
-          <Ionicons name="calendar-outline" size={16} color={COLORS.accent} />
-          <Text style={styles.dataBannerTexto}>
+        <View
+          accessible
+          accessibilityLabel={`Data de hoje: ${infoHoje.diaSemana}, ${infoHoje.formatada}`}
+          style={[
+            styles.dataBanner,
+            {
+              backgroundColor: tema.bgElevated,
+              borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+              marginBottom: 16 + tema.espacoExtra,
+            },
+          ]}
+        >
+          <Ionicons name="calendar-outline" size={16} color={tema.accent} accessible={false} />
+          <Text
+            style={[
+              styles.dataBannerTexto,
+              { color: tema.accent, fontSize: tema.fontSize(13) },
+            ]}
+          >
             {infoHoje.diaSemana}, {infoHoje.formatada}
           </Text>
         </View>
 
         {carregando ? (
           <View style={styles.loadingBox}>
-            <ActivityIndicator size="large" color={COLORS.accent} />
-            <Text style={styles.loadingTexto}>A calcular indicadores do salão...</Text>
+            <ActivityIndicator size="large" color={tema.accent} />
+            <Text
+              style={[
+                styles.loadingTexto,
+                { color: tema.textSecondary, fontSize: tema.fontSize(14) },
+              ]}
+            >
+              A calcular indicadores do salão...
+            </Text>
           </View>
         ) : (
           <>
-            <View style={styles.cardDestaque}>
+            <View
+              accessible
+              accessibilityLabel={`Faturamento total: ${formatarMoeda(metricas.faturamentoTotal)}. Concluído até o momento: ${formatarMoeda(metricas.faturamentoConcluido)}`}
+              style={[
+                styles.cardDestaque,
+                {
+                  backgroundColor: tema.bgSurface,
+                  borderColor: tema.accentBorder,
+                  marginBottom: 14 + tema.espacoExtra,
+                },
+              ]}
+            >
               <View style={styles.cardHeader}>
-                <View style={styles.iconeBox}>
-                  <Ionicons name="cash-outline" size={22} color={COLORS.accent} />
+                <View
+                  style={[
+                    styles.iconeBox,
+                    { backgroundColor: tema.accentSoft },
+                  ]}
+                  accessible={false}
+                >
+                  <Ionicons name="cash-outline" size={22} color={tema.accent} />
                 </View>
-                <Text style={styles.cardLabel}>Faturamento</Text>
+                <Text
+                  style={[
+                    styles.cardLabel,
+                    { color: tema.textSecondary, fontSize: tema.fontSize(14) },
+                  ]}
+                >
+                  Faturamento
+                </Text>
               </View>
 
-              <Text style={styles.valorDestaque}>
+              <Text
+                style={[
+                  styles.valorDestaque,
+                  { color: tema.accent, fontSize: tema.fontSize(30) },
+                ]}
+              >
                 {formatarMoeda(metricas.faturamentoTotal)}
               </Text>
-              <Text style={styles.cardDetalhe}>
+              <Text
+                style={[
+                  styles.cardDetalhe,
+                  { color: tema.textSecondary, fontSize: tema.fontSize(12) },
+                ]}
+              >
                 Concluído até o momento: {formatarMoeda(metricas.faturamentoConcluido)}
               </Text>
             </View>
 
-            <View style={styles.gridDois}>
-              <View style={styles.cardMetrica}>
+            <View
+              style={[
+                styles.gridDois,
+                {
+                  gap: 12 + tema.espacoExtra,
+                  marginBottom: 22 + tema.espacoExtra,
+                },
+              ]}
+            >
+              <View
+                accessible
+                accessibilityLabel={`Agendamentos hoje: ${metricas.agendamentosHojeCount}, data ${infoHoje.formatada}`}
+                style={[
+                  styles.cardMetrica,
+                  {
+                    backgroundColor: tema.bgSurface,
+                    borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                  },
+                ]}
+              >
                 <View style={styles.cardHeader}>
-                  <View style={styles.iconeBoxMenor}>
-                    <Ionicons name="calendar-outline" size={18} color={COLORS.info} />
+                  <View
+                    style={[
+                      styles.iconeBoxMenor,
+                      { backgroundColor: tema.bgElevated },
+                    ]}
+                    accessible={false}
+                  >
+                    <Ionicons name="calendar-outline" size={18} color={tema.info} />
                   </View>
-                  <Text style={styles.cardTituloMenor}>Agendamentos Hoje</Text>
+                  <Text
+                    style={[
+                      styles.cardTituloMenor,
+                      { color: tema.textSecondary, fontSize: tema.fontSize(12) },
+                    ]}
+                  >
+                    Agendamentos Hoje
+                  </Text>
                 </View>
 
-                <Text style={[styles.valorMetrica, { color: COLORS.info }]}>
+                <Text
+                  style={[
+                    styles.valorMetrica,
+                    { color: tema.info, fontSize: tema.fontSize(26) },
+                  ]}
+                >
                   {metricas.agendamentosHojeCount}
                 </Text>
-                <Text style={styles.cardDetalheMenor}>Data: {infoHoje.formatada}</Text>
+                {!config.modoCalmo && (
+                  <Text
+                    style={[
+                      styles.cardDetalheMenor,
+                      { color: tema.textMuted, fontSize: tema.fontSize(11) },
+                    ]}
+                  >
+                    Data: {infoHoje.formatada}
+                  </Text>
+                )}
               </View>
 
-              <View style={styles.cardMetrica}>
+              <View
+                accessible
+                accessibilityLabel={`Clientes ativos: ${metricas.clientesAtivosCount}, base cadastrada`}
+                style={[
+                  styles.cardMetrica,
+                  {
+                    backgroundColor: tema.bgSurface,
+                    borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                  },
+                ]}
+              >
                 <View style={styles.cardHeader}>
-                  <View style={styles.iconeBoxMenor}>
-                    <Ionicons name="people-outline" size={18} color={COLORS.success} />
+                  <View
+                    style={[
+                      styles.iconeBoxMenor,
+                      { backgroundColor: tema.bgElevated },
+                    ]}
+                    accessible={false}
+                  >
+                    <Ionicons name="people-outline" size={18} color={tema.success} />
                   </View>
-                  <Text style={styles.cardTituloMenor}>Clientes Ativos</Text>
+                  <Text
+                    style={[
+                      styles.cardTituloMenor,
+                      { color: tema.textSecondary, fontSize: tema.fontSize(12) },
+                    ]}
+                  >
+                    Clientes Ativos
+                  </Text>
                 </View>
 
-                <Text style={[styles.valorMetrica, { color: COLORS.success }]}>
+                <Text
+                  style={[
+                    styles.valorMetrica,
+                    { color: tema.success, fontSize: tema.fontSize(26) },
+                  ]}
+                >
                   {metricas.clientesAtivosCount}
                 </Text>
-                <Text style={styles.cardDetalheMenor}>Base cadastrada</Text>
+                {!config.modoCalmo && (
+                  <Text
+                    style={[
+                      styles.cardDetalheMenor,
+                      { color: tema.textMuted, fontSize: tema.fontSize(11) },
+                    ]}
+                  >
+                    Base cadastrada
+                  </Text>
+                )}
               </View>
             </View>
 
-            <Text style={styles.secaoTitulo}>Gerenciamento Rápido</Text>
+            <Text
+              accessibilityRole="header"
+              style={[
+                styles.secaoTitulo,
+                { color: tema.accent, fontSize: tema.fontSize(15) },
+              ]}
+            >
+              Gerenciamento Rápido
+            </Text>
 
             <TouchableOpacity
-              style={styles.atalhoCard}
+              hitSlop={tema.hitSlopPadrao}
+              accessibilityRole="button"
+              accessibilityLabel="Gerenciar Usuários: Clientes, profissionais e níveis de acesso"
+              style={[
+                styles.atalhoCard,
+                {
+                  minHeight: tema.minTouchHeight,
+                  backgroundColor: tema.bgSurface,
+                  borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                  marginBottom: 10 + tema.espacoExtra,
+                },
+              ]}
               onPress={() => router.push('./gerenciar-usuarios')}
             >
               <View style={styles.atalhoEsquerda}>
-                <Ionicons name="people-circle-outline" size={22} color={COLORS.accent} />
-                <View>
-                  <Text style={styles.atalhoTitulo}>Gerenciar Usuários</Text>
-                  <Text style={styles.atalhoSub}>
-                    Clientes, profissionais e níveis de acesso
+                <Ionicons name="people-circle-outline" size={22} color={tema.accent} accessible={false} />
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[
+                      styles.atalhoTitulo,
+                      { color: tema.textPrimary, fontSize: tema.fontSize(15) },
+                    ]}
+                  >
+                    Gerenciar Usuários
                   </Text>
+                  {!config.modoCalmo && (
+                    <Text
+                      style={[
+                        styles.atalhoSub,
+                        { color: tema.textSecondary, fontSize: tema.fontSize(12) },
+                      ]}
+                    >
+                      Clientes, profissionais e níveis de acesso
+                    </Text>
+                  )}
                 </View>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+              <Ionicons name="chevron-forward" size={20} color={tema.textSecondary} accessible={false} />
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.atalhoCard}
+              hitSlop={tema.hitSlopPadrao}
+              accessibilityRole="button"
+              accessibilityLabel="Catálogo e Equipe: Serviços, preços e profissionais do salão"
+              style={[
+                styles.atalhoCard,
+                {
+                  minHeight: tema.minTouchHeight,
+                  backgroundColor: tema.bgSurface,
+                  borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                  marginBottom: 10 + tema.espacoExtra,
+                },
+              ]}
               onPress={() => router.push('./catalogo-equipe')}
             >
               <View style={styles.atalhoEsquerda}>
-                <Ionicons name="sparkles-outline" size={22} color={COLORS.accent} />
-                <View>
-                  <Text style={styles.atalhoTitulo}>Catálogo e Equipe</Text>
-                  <Text style={styles.atalhoSub}>
-                    Serviços, preços e profissionais do salão
+                <Ionicons name="sparkles-outline" size={22} color={tema.accent} accessible={false} />
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[
+                      styles.atalhoTitulo,
+                      { color: tema.textPrimary, fontSize: tema.fontSize(15) },
+                    ]}
+                  >
+                    Catálogo e Equipe
                   </Text>
+                  {!config.modoCalmo && (
+                    <Text
+                      style={[
+                        styles.atalhoSub,
+                        { color: tema.textSecondary, fontSize: tema.fontSize(12) },
+                      ]}
+                    >
+                      Serviços, preços e profissionais do salão
+                    </Text>
+                  )}
                 </View>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+              <Ionicons name="chevron-forward" size={20} color={tema.textSecondary} accessible={false} />
             </TouchableOpacity>
 
-            {usuarioAtual?.email && (
-              <Text style={styles.rodapeSessao}>
+            {usuarioAtual?.email && !config.modoCalmo && (
+              <Text
+                style={[
+                  styles.rodapeSessao,
+                  { color: tema.textMuted, fontSize: tema.fontSize(11) },
+                ]}
+              >
                 Sessão admin: {usuarioAtual.email}
               </Text>
             )}
@@ -331,7 +565,6 @@ export default function AdminDashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bgPrimary,
   },
   topBar: {
     flexDirection: 'row',
@@ -340,9 +573,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 14,
-    backgroundColor: COLORS.bgSurface,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderSubtle,
   },
   topEsquerda: {
     flexDirection: 'row',
@@ -353,37 +584,26 @@ const styles = StyleSheet.create({
   menuButton: {
     padding: 4,
   },
-  topSubtitulo: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-  },
+  topSubtitulo: {},
   topTitle: {
-    fontSize: 19,
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
   },
   perfilButton: {
     padding: 4,
   },
   content: {
     padding: 20,
-    paddingBottom: 36,
   },
   dataBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: COLORS.bgElevated,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: COLORS.borderSoft,
-    marginBottom: 16,
   },
   dataBannerTexto: {
-    color: COLORS.accent,
-    fontSize: 13,
     fontWeight: 'bold',
   },
   loadingBox: {
@@ -392,17 +612,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 12,
   },
-  loadingTexto: {
-    color: COLORS.textSecondary,
-    fontSize: 14,
-  },
+  loadingTexto: {},
   cardDestaque: {
-    backgroundColor: COLORS.bgSurface,
     borderRadius: 16,
     padding: 18,
     borderWidth: 1,
-    borderColor: COLORS.accentBorder,
-    marginBottom: 14,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -414,64 +628,43 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 10,
-    backgroundColor: COLORS.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cardLabel: {
-    color: COLORS.textSecondary,
-    fontSize: 14,
     fontWeight: '600',
   },
   valorDestaque: {
-    color: COLORS.accent,
-    fontSize: 30,
     fontWeight: 'bold',
     marginBottom: 4,
   },
-  cardDetalhe: {
-    color: COLORS.textSecondary,
-    fontSize: 12,
-  },
+  cardDetalhe: {},
   gridDois: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 22,
   },
   cardMetrica: {
     flex: 1,
-    backgroundColor: COLORS.bgSurface,
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
-    borderColor: COLORS.borderSoft,
   },
   iconeBoxMenor: {
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: COLORS.bgElevated,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cardTituloMenor: {
-    color: COLORS.textSecondary,
-    fontSize: 12,
     fontWeight: '600',
     flex: 1,
   },
   valorMetrica: {
-    fontSize: 26,
     fontWeight: 'bold',
     marginBottom: 4,
   },
-  cardDetalheMenor: {
-    color: COLORS.textMuted,
-    fontSize: 11,
-  },
+  cardDetalheMenor: {},
   secaoTitulo: {
-    color: COLORS.accent,
-    fontSize: 15,
     fontWeight: 'bold',
     marginBottom: 12,
   },
@@ -479,12 +672,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: COLORS.bgSurface,
     padding: 15,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: COLORS.borderSoft,
-    marginBottom: 10,
   },
   atalhoEsquerda: {
     flexDirection: 'row',
@@ -493,18 +683,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   atalhoTitulo: {
-    color: COLORS.textPrimary,
-    fontSize: 15,
     fontWeight: 'bold',
   },
   atalhoSub: {
-    color: COLORS.textSecondary,
-    fontSize: 12,
     marginTop: 2,
   },
   rodapeSessao: {
-    color: COLORS.textMuted,
-    fontSize: 11,
     textAlign: 'center',
     marginTop: 14,
   },

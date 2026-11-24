@@ -4,7 +4,10 @@ import { doc, getDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { auth, db } from '../config/firebase';
-import { AcessibilidadeProvider, useAcessibilidade, } from '../context/AcessibilidadeContext';
+import {
+  AcessibilidadeProvider,
+  useAcessibilidade,
+} from '../context/AcessibilidadeContext';
 
 function ConteudoRaizApp() {
   const router = useRouter();
@@ -15,7 +18,6 @@ function ConteudoRaizApp() {
   const [usuarioLogado, setUsuarioLogado] = useState(false);
   const [grupoAcesso, setGrupoAcesso] = useState(null);
 
-  // Verifica a autenticação do usuário e seu nível de acesso no Firestore
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -54,7 +56,6 @@ function ConteudoRaizApp() {
     return unsubscribe;
   }, []);
 
-  // Controla o redirecionamento conforme estado de autenticação e grupo de acesso
   useEffect(() => {
     if (carregando || !usuarioLogado) return;
 
