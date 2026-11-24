@@ -24,6 +24,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth, db } from '../../config/firebase';
+import { useAcessibilidade } from '../../context/AcessibilidadeContext';
 
 const HORARIOS_PADRAO = ['09:00', '10:30', '13:00', '14:30', '16:00', '17:30'];
 const DIAS_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -55,6 +56,7 @@ function gerarProximosDias(quantidade = 14) {
 export default function AgendarServicoScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const { tema, config } = useAcessibilidade();
 
   const idsParam = params.ids || '';
   const idsArray = useMemo(
@@ -167,6 +169,7 @@ export default function AgendarServicoScreen() {
 
   const precoTotal = servicosEscolhidos.reduce((acc, curr) => acc + (Number(curr.preco) || 0), 0);
   const nomesServicosString = servicosEscolhidos.map((s) => s.nome).join(', ');
+  const larguraDia = config.tamanhoFonte >= 1.15 || config.espacamentoAmplo ? '22.5%' : '18.5%';
 
   async function confirmarAgendamento() {
     if (servicosEscolhidos.length === 0) {
@@ -226,7 +229,7 @@ export default function AgendarServicoScreen() {
       });
 
       Alert.alert('Sucesso', `Agendamento confirmado para ${diaSelecionado.formatada} às ${horarioSelecionado}!`, [
-        { text: 'Ver Agendamentos', onPress: () => router.replace('/(cliente)/agenda') },
+        { text: 'Ver Agendamentos', onPress: () => router.replace('/(profissional)/agenda') },
       ]);
     } catch (error) {
       console.error('Erro ao confirmar agendamento:', error);
@@ -237,43 +240,156 @@ export default function AgendarServicoScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+    <SafeAreaView style={[styles.container, { backgroundColor: tema.bgPrimary }]}>
+      <View
+        style={[
+          styles.topBar,
+          {
+            backgroundColor: tema.bgSurface,
+            borderBottomColor: tema.borderSubtle,
+          },
+        ]}
+      >
+        <TouchableOpacity
+          hitSlop={tema.hitSlopPadrao}
+          accessibilityRole="button"
+          accessibilityLabel="Voltar para a tela anterior"
+          onPress={() => router.back()}
+          style={[
+            styles.backButton,
+            {
+              minWidth: tema.minTouchHeight,
+              minHeight: tema.minTouchHeight,
+              alignItems: 'center',
+              justifyContent: 'center',
+            },
+          ]}
+        >
+          <Ionicons name="arrow-back" size={24} color={tema.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.topTitle}>Concluir Agendamento</Text>
-        <View style={{ width: 24 }} />
+        <Text
+          accessibilityRole="header"
+          style={[
+            styles.topTitle,
+            { color: tema.textPrimary, fontSize: tema.fontSize(18) },
+          ]}
+        >
+          Concluir Agendamento
+        </Text>
+        <View style={{ width: Math.max(24, tema.minTouchHeight) }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.resumoCard}>
-          <Text style={styles.resumoLabel}>Serviços Selecionados ({servicosEscolhidos.length})</Text>
-          <Text style={styles.resumoServico}>{nomesServicosString || 'Nenhum serviço'}</Text>
-          <Text style={styles.resumoPreco}>Total: R$ {precoTotal.toFixed(2).replace('.', ',')}</Text>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: 88 + tema.espacoExtra },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        <View
+          accessible
+          accessibilityLabel={`Serviços Selecionados (${servicosEscolhidos.length}): ${nomesServicosString || 'Nenhum serviço'}. Total: R$ ${precoTotal.toFixed(2).replace('.', ',')}`}
+          style={[
+            styles.resumoCard,
+            {
+              backgroundColor: tema.bgSurface,
+              borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+              marginBottom: 20 + tema.espacoExtra,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.resumoLabel,
+              { color: tema.textSecondary, fontSize: tema.fontSize(12) },
+            ]}
+          >
+            Serviços Selecionados ({servicosEscolhidos.length})
+          </Text>
+          <Text
+            style={[
+              styles.resumoServico,
+              { color: tema.textPrimary, fontSize: tema.fontSize(15) },
+            ]}
+          >
+            {nomesServicosString || 'Nenhum serviço'}
+          </Text>
+          <Text
+            style={[
+              styles.resumoPreco,
+              { color: tema.accent, fontSize: tema.fontSize(16) },
+            ]}
+          >
+            Total: R$ {precoTotal.toFixed(2).replace('.', ',')}
+          </Text>
         </View>
 
-        <Text style={styles.secaoTitulo}>1. Escolha o Profissional</Text>
+        <Text
+          accessibilityRole="header"
+          style={[
+            styles.secaoTitulo,
+            { color: tema.accent, fontSize: tema.fontSize(15) },
+          ]}
+        >
+          1. Escolha o Profissional
+        </Text>
         {carregandoDados ? (
-          <ActivityIndicator color="#FF98B9" style={{ marginVertical: 15 }} />
+          <ActivityIndicator color={tema.accent} style={{ marginVertical: 15 }} />
         ) : profissionais.length === 0 ? (
-          <Text style={styles.textoVazio}>Nenhum profissional disponível.</Text>
+          <Text
+            style={[
+              styles.textoVazio,
+              { color: tema.textSecondary, fontSize: tema.fontSize(13) },
+            ]}
+          >
+            Nenhum profissional disponível.
+          </Text>
         ) : (
-          <View style={styles.gridProfissionais}>
+          <View
+            style={[
+              styles.gridProfissionais,
+              { gap: 10 + tema.espacoExtra, marginBottom: 16 + tema.espacoExtra },
+            ]}
+          >
             {profissionais.map((prof) => {
               const selecionado = profissionalSelecionado?.id === prof.id;
               return (
                 <TouchableOpacity
                   key={prof.id}
-                  style={[styles.cardProfissional, selecionado && styles.cardProfissionalSelecionado]}
+                  hitSlop={tema.hitSlopPadrao}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Profissional ${prof.nome}`}
+                  accessibilityState={{ selected: selecionado }}
+                  style={[
+                    styles.cardProfissional,
+                    {
+                      backgroundColor: selecionado ? tema.accentSoft : tema.bgSurface,
+                      borderColor: selecionado
+                        ? tema.accent
+                        : config.altoContraste
+                          ? tema.borderSubtle
+                          : 'rgba(255,255,255,0.05)',
+                      minHeight: tema.minTouchHeight,
+                    },
+                  ]}
                   onPress={() => selecionarProfissional(prof)}
                 >
                   <Ionicons
                     name={selecionado ? 'checkbox-outline' : 'square-outline'}
                     size={20}
-                    color={selecionado ? '#FF98B9' : '#A0A3A0'}
+                    color={selecionado ? tema.accent : tema.textMuted}
+                    accessible={false}
                   />
-                  <Text style={[styles.nomeProfissional, selecionado && { color: '#FF98B9', fontWeight: 'bold' }]}>
+                  <Text
+                    style={[
+                      styles.nomeProfissional,
+                      {
+                        color: selecionado ? tema.accent : tema.textPrimary,
+                        fontSize: tema.fontSize(15),
+                        fontWeight: selecionado ? 'bold' : 'normal',
+                      },
+                    ]}
+                  >
                     {prof.nome}
                   </Text>
                 </TouchableOpacity>
@@ -282,48 +398,141 @@ export default function AgendarServicoScreen() {
           </View>
         )}
 
-        <Text style={styles.secaoTitulo}>2. Clique no Dia para Ver os Horários</Text>
-        <View style={styles.gridDias}>
+        <Text
+          accessibilityRole="header"
+          style={[
+            styles.secaoTitulo,
+            { color: tema.accent, fontSize: tema.fontSize(15) },
+          ]}
+        >
+          2. Clique no Dia para Ver os Horários
+        </Text>
+        <View
+          style={[
+            styles.gridDias,
+            { gap: 8 + tema.espacoExtra, marginBottom: 16 + tema.espacoExtra },
+          ]}
+        >
           {proximosDias.map((diaObj) => {
             const ativo = diaSelecionado?.iso === diaObj.iso;
             return (
               <TouchableOpacity
                 key={diaObj.iso}
-                style={[styles.cardDia, ativo && styles.cardDiaSelecionado]}
+                hitSlop={tema.hitSlopPadrao}
+                accessibilityRole="button"
+                accessibilityLabel={diaObj.rotuloCompleto}
+                accessibilityState={{ selected: ativo }}
+                style={[
+                  styles.cardDia,
+                  {
+                    width: larguraDia,
+                    backgroundColor: ativo ? tema.accent : tema.bgSurface,
+                    borderColor: ativo
+                      ? tema.accent
+                      : config.altoContraste
+                        ? tema.borderSubtle
+                        : 'rgba(255,255,255,0.06)',
+                    minHeight: tema.minTouchHeight,
+                    justifyContent: 'center',
+                  },
+                ]}
                 onPress={() => abrirModalDoDia(diaObj)}
               >
-                <Text style={[styles.diaSemanaTexto, ativo && styles.textoEscuro]}>{diaObj.diaSemana}</Text>
-                <Text style={[styles.diaNumeroTexto, ativo && styles.textoEscuro]}>{diaObj.diaNumero}</Text>
+                <Text
+                  style={[
+                    styles.diaSemanaTexto,
+                    {
+                      color: ativo ? tema.textOnAccent : tema.textSecondary,
+                      fontSize: tema.fontSize(11),
+                    },
+                  ]}
+                >
+                  {diaObj.diaSemana}
+                </Text>
+                <Text
+                  style={[
+                    styles.diaNumeroTexto,
+                    {
+                      color: ativo ? tema.textOnAccent : tema.textPrimary,
+                      fontSize: tema.fontSize(15),
+                    },
+                  ]}
+                >
+                  {diaObj.diaNumero}
+                </Text>
               </TouchableOpacity>
             );
           })}
         </View>
 
         {diaSelecionado && (
-          <TouchableOpacity style={styles.resumoSelecaoDataHora} onPress={() => abrirModalDoDia(diaSelecionado)}>
+          <TouchableOpacity
+            hitSlop={tema.hitSlopPadrao}
+            accessibilityRole="button"
+            accessibilityLabel={`Data escolhida: ${diaSelecionado.rotuloCompleto}. ${horarioSelecionado ? `Horário selecionado: ${horarioSelecionado}. Toque para alterar` : 'Toque aqui para escolher um horário disponível'}`}
+            style={[
+              styles.resumoSelecaoDataHora,
+              {
+                backgroundColor: tema.bgElevated,
+                borderColor: tema.accentBorder,
+                minHeight: tema.minTouchHeight,
+                marginBottom: 22 + tema.espacoExtra,
+              },
+            ]}
+            onPress={() => abrirModalDoDia(diaSelecionado)}
+          >
             <View style={{ flex: 1 }}>
-              <Text style={styles.resumoDataHoraTitulo}>
+              <Text
+                style={[
+                  styles.resumoDataHoraTitulo,
+                  { color: tema.textPrimary, fontSize: tema.fontSize(13) },
+                ]}
+              >
                 Data escolhida: {diaSelecionado.rotuloCompleto} ({diaSelecionado.formatada})
               </Text>
-              <Text style={styles.resumoDataHoraSub}>
+              <Text
+                style={[
+                  styles.resumoDataHoraSub,
+                  { color: tema.accent, fontSize: tema.fontSize(12) },
+                ]}
+              >
                 {horarioSelecionado
                   ? `Horário selecionado: ${horarioSelecionado}`
                   : 'Toque aqui para escolher um horário disponível'}
               </Text>
             </View>
-            <Ionicons name="time-outline" size={22} color="#FF98B9" />
+            <Ionicons name="time-outline" size={22} color={tema.accent} accessible={false} />
           </TouchableOpacity>
         )}
 
         <TouchableOpacity
-          style={[styles.botaoConfirmar, salvando && { opacity: 0.6 }]}
+          hitSlop={tema.hitSlopPadrao}
+          accessibilityRole="button"
+          accessibilityLabel={salvando ? 'Confirmando agendamento' : 'Confirmar Agendamento'}
+          accessibilityState={{ disabled: salvando, busy: salvando }}
+          style={[
+            styles.botaoConfirmar,
+            {
+              backgroundColor: tema.accent,
+              minHeight: tema.minTouchHeight,
+              justifyContent: 'center',
+            },
+            salvando && { opacity: 0.6 },
+          ]}
           onPress={confirmarAgendamento}
           disabled={salvando}
         >
           {salvando ? (
-            <ActivityIndicator color="#1E201E" />
+            <ActivityIndicator color={tema.textOnAccent} />
           ) : (
-            <Text style={styles.textoBotaoConfirmar}>Confirmar Agendamento</Text>
+            <Text
+              style={[
+                styles.textoBotaoConfirmar,
+                { color: tema.textOnAccent, fontSize: tema.fontSize(16) },
+              ]}
+            >
+              Confirmar Agendamento
+            </Text>
           )}
         </TouchableOpacity>
       </ScrollView>
@@ -332,46 +541,118 @@ export default function AgendarServicoScreen() {
         visible={modalVisivel}
         transparent
         animationType="fade"
+        accessibilityViewIsModal
         onRequestClose={() => setModalVisivel(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
+          <View
+            style={[
+              styles.modalCard,
+              {
+                backgroundColor: tema.bgElevated,
+                borderColor: tema.accentBorder,
+              },
+            ]}
+          >
             <View style={styles.modalHeader}>
               <View style={{ flex: 1, marginRight: 10 }}>
-                <Text style={styles.modalTitulo}>Horários Disponíveis</Text>
-                <Text style={styles.modalSubtitulo}>
+                <Text
+                  accessibilityRole="header"
+                  style={[
+                    styles.modalTitulo,
+                    { color: tema.textPrimary, fontSize: tema.fontSize(18) },
+                  ]}
+                >
+                  Horários Disponíveis
+                </Text>
+                <Text
+                  style={[
+                    styles.modalSubtitulo,
+                    { color: tema.accent, fontSize: tema.fontSize(12) },
+                  ]}
+                >
                   {profissionalSelecionado?.nome} • {diaSelecionado?.rotuloCompleto} ({diaSelecionado?.formatada})
                 </Text>
               </View>
-              <TouchableOpacity onPress={() => setModalVisivel(false)} style={styles.botaoFecharModal}>
-                <Ionicons name="close" size={22} color="#FFFFFF" />
+              <TouchableOpacity
+                hitSlop={tema.hitSlopPadrao}
+                accessibilityRole="button"
+                accessibilityLabel="Fechar janela de horários"
+                onPress={() => setModalVisivel(false)}
+                style={[
+                  styles.botaoFecharModal,
+                  {
+                    backgroundColor: tema.bgSurface,
+                    minWidth: tema.minTouchHeight,
+                    minHeight: tema.minTouchHeight,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  },
+                ]}
+              >
+                <Ionicons name="close" size={22} color={tema.textPrimary} />
               </TouchableOpacity>
             </View>
 
             {carregandoHorarios ? (
-              <ActivityIndicator size="large" color="#FF98B9" style={{ marginVertical: 30 }} />
+              <ActivityIndicator
+                size="large"
+                color={tema.accent}
+                accessibilityLabel="Carregando horários disponíveis"
+                style={{ marginVertical: 30 }}
+              />
             ) : (
-              <View style={styles.modalGridHorarios}>
+              <View
+                style={[
+                  styles.modalGridHorarios,
+                  { gap: 10 + tema.espacoExtra },
+                ]}
+              >
                 {HORARIOS_PADRAO.map((horario) => {
                   const ocupado = horariosOcupados.includes(horario);
                   const selecionado = horarioSelecionado === horario && !ocupado;
+                  const statusTexto = ocupado ? 'Ocupado' : selecionado ? 'Selecionado' : 'Livre';
 
                   return (
                     <TouchableOpacity
                       key={horario}
+                      hitSlop={tema.hitSlopPadrao}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Horário ${horario}, ${statusTexto}`}
+                      accessibilityState={{ disabled: ocupado, selected: selecionado }}
                       disabled={ocupado}
                       onPress={() => selecionarHorarioNoModal(horario)}
                       style={[
                         styles.slotHorario,
-                        ocupado && styles.slotOcupado,
-                        selecionado && styles.slotSelecionado,
+                        {
+                          backgroundColor: tema.bgSurface,
+                          borderColor: config.altoContraste
+                            ? tema.accentBorder
+                            : tema.borderSubtle,
+                          minHeight: tema.minTouchHeight,
+                        },
+                        ocupado && {
+                          backgroundColor: tema.bgPrimary,
+                          borderColor: tema.danger,
+                          opacity: 0.55,
+                        },
+                        selecionado && {
+                          backgroundColor: tema.accent,
+                          borderColor: tema.accent,
+                        },
                       ]}
                     >
                       <Text
                         style={[
                           styles.slotTexto,
-                          ocupado && styles.slotTextoOcupado,
-                          selecionado && styles.slotTextoSelecionado,
+                          {
+                            color: selecionado
+                              ? tema.textOnAccent
+                              : ocupado
+                                ? tema.danger
+                                : tema.textPrimary,
+                            fontSize: tema.fontSize(15),
+                          },
                         ]}
                       >
                         {horario}
@@ -379,11 +660,17 @@ export default function AgendarServicoScreen() {
                       <Text
                         style={[
                           styles.slotStatus,
-                          ocupado && styles.slotTextoOcupado,
-                          selecionado && styles.slotTextoSelecionado,
+                          {
+                            color: selecionado
+                              ? tema.textOnAccent
+                              : ocupado
+                                ? tema.danger
+                                : tema.success,
+                            fontSize: tema.fontSize(11),
+                          },
                         ]}
                       >
-                        {ocupado ? 'Ocupado' : selecionado ? 'Selecionado' : 'Livre'}
+                        {statusTexto}
                       </Text>
                     </TouchableOpacity>
                   );
@@ -398,7 +685,7 @@ export default function AgendarServicoScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#434643' },
+  container: { flex: 1 },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -406,81 +693,59 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 14,
-    backgroundColor: '#595959',
     borderBottomWidth: 1,
-    borderBottomColor: '#6B6E6B',
   },
-  topTitle: { fontSize: 18, fontWeight: 'bold', color: '#FFFFFF' },
+  topTitle: { fontWeight: 'bold' },
   backButton: { padding: 4 },
-  content: { padding: 20, paddingBottom: 36 },
+  content: { padding: 20 },
   resumoCard: {
-    backgroundColor: '#595959',
     padding: 18,
     borderRadius: 14,
-    marginBottom: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
   },
-  resumoLabel: { color: '#D1D1D1', fontSize: 12 },
-  resumoServico: { color: '#FFF', fontSize: 15, fontWeight: 'bold', marginTop: 4 },
-  resumoPreco: { color: '#FF98B9', fontSize: 16, fontWeight: 'bold', marginTop: 8 },
-  secaoTitulo: { fontSize: 15, fontWeight: 'bold', color: '#FF98B9', marginBottom: 12, marginTop: 6 },
-  textoVazio: { color: '#D1D1D1', fontSize: 13, fontStyle: 'italic' },
-  gridProfissionais: { gap: 10, marginBottom: 16 },
+  resumoLabel: {},
+  resumoServico: { fontWeight: 'bold', marginTop: 4 },
+  resumoPreco: { fontWeight: 'bold', marginTop: 8 },
+  secaoTitulo: { fontWeight: 'bold', marginBottom: 12, marginTop: 6 },
+  textoVazio: { fontStyle: 'italic' },
+  gridProfissionais: {},
   cardProfissional: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#595959',
     padding: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
     gap: 12,
   },
-  cardProfissionalSelecionado: { borderColor: '#FF98B9', backgroundColor: 'rgba(255, 152, 185, 0.12)' },
-  nomeProfissional: { color: '#FFF', fontSize: 15 },
+  nomeProfissional: {},
   gridDias: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
   },
   cardDia: {
-    width: '18.5%',
-    backgroundColor: '#595959',
     paddingVertical: 10,
     borderRadius: 10,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
   },
-  cardDiaSelecionado: {
-    backgroundColor: '#FF98B9',
-    borderColor: '#FF98B9',
-  },
-  diaSemanaTexto: { color: '#D1D1D1', fontSize: 11, fontWeight: '600' },
-  diaNumeroTexto: { color: '#FFF', fontSize: 15, fontWeight: 'bold', marginTop: 2 },
-  textoEscuro: { color: '#1E201E' },
+  diaSemanaTexto: { fontWeight: '600' },
+  diaNumeroTexto: { fontWeight: 'bold', marginTop: 2 },
   resumoSelecaoDataHora: {
-    backgroundColor: '#383B38',
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255, 152, 185, 0.35)',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 22,
   },
-  resumoDataHoraTitulo: { color: '#FFF', fontSize: 13, fontWeight: 'bold' },
-  resumoDataHoraSub: { color: '#FF98B9', fontSize: 12, marginTop: 3 },
+  resumoDataHoraTitulo: { fontWeight: 'bold' },
+  resumoDataHoraSub: { marginTop: 3 },
   botaoConfirmar: {
-    backgroundColor: '#FF98B9',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
   },
-  textoBotaoConfirmar: { color: '#1E201E', fontSize: 16, fontWeight: 'bold' },
+  textoBotaoConfirmar: { fontWeight: 'bold' },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.72)',
@@ -488,11 +753,9 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalCard: {
-    backgroundColor: '#383B38',
     borderRadius: 18,
     padding: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 152, 185, 0.35)',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -500,10 +763,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 18,
   },
-  modalTitulo: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
-  modalSubtitulo: { color: '#FF98B9', fontSize: 12, marginTop: 3 },
+  modalTitulo: { fontWeight: 'bold' },
+  modalSubtitulo: { marginTop: 3 },
   botaoFecharModal: {
-    backgroundColor: '#4A4E4A',
     padding: 6,
     borderRadius: 8,
   },
@@ -511,29 +773,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: 10,
   },
   slotHorario: {
     width: '48%',
-    backgroundColor: '#595959',
     paddingVertical: 14,
     paddingHorizontal: 10,
     borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
   },
-  slotOcupado: {
-    backgroundColor: '#2B2D2B',
-    borderColor: 'rgba(255, 76, 76, 0.25)',
-    opacity: 0.55,
-  },
-  slotSelecionado: {
-    backgroundColor: '#FF98B9',
-    borderColor: '#FF98B9',
-  },
-  slotTexto: { color: '#FFF', fontSize: 15, fontWeight: 'bold' },
-  slotStatus: { color: '#A5D6A7', fontSize: 11, marginTop: 3, fontWeight: '600' },
-  slotTextoOcupado: { color: '#FF7B7B' },
-  slotTextoSelecionado: { color: '#1E201E' },
+  slotTexto: { fontWeight: 'bold' },
+  slotStatus: { marginTop: 3, fontWeight: '600' },
 });

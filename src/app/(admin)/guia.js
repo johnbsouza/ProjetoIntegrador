@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAcessibilidade } from '../../context/AcessibilidadeContext';
 
 const funcoes = [
   {
@@ -63,31 +64,107 @@ const funcoes = [
 
 export default function TelaGuia() {
   const router = useRouter();
+  const { tema, config } = useAcessibilidade();
 
   return (
-    <LinearGradient colors={['#1E201E', '#434643', '#1A1C1A']} style={{ flex: 1 }}>
+    <LinearGradient
+      colors={config.altoContraste ? [tema.bgPrimary, tema.bgPrimary] : ['#1E201E', '#434643', '#1A1C1A']}
+      style={{ flex: 1 }}
+    >
       <SafeAreaView style={{ flex: 1, paddingHorizontal: 24 }}>
         <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={20} color="#FF98B9" />
+          <TouchableOpacity
+            hitSlop={tema.hitSlopPadrao}
+            accessibilityRole="button"
+            accessibilityLabel="Voltar para a tela anterior"
+            style={[
+              styles.backButton,
+              {
+                minWidth: tema.minTouchHeight,
+                minHeight: tema.minTouchHeight,
+                backgroundColor: tema.bgSurface,
+                borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+              },
+            ]}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="arrow-back" size={20} color={tema.accent} />
           </TouchableOpacity>
-          <Text style={styles.titulo}>Guia da Plataforma</Text>
+          <Text
+            accessibilityRole="header"
+            style={[
+              styles.titulo,
+              { color: tema.accent, fontSize: tema.fontSize(22) },
+            ]}
+          >
+            Guia da Plataforma
+          </Text>
         </View>
 
-        <ScrollView contentContainerStyle={{ paddingBottom: 30 }}>
+        <ScrollView
+          contentContainerStyle={{
+            paddingBottom: 88 + tema.espacoExtra,
+            gap: 15 + tema.espacoExtra,
+          }}
+          showsVerticalScrollIndicator={false}
+        >
           {funcoes.map((f) => (
-            <View key={f.titulo} style={styles.card}>
+            <View
+              key={f.titulo}
+              style={[
+                styles.card,
+                {
+                  backgroundColor: tema.bgSurface,
+                  borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                },
+              ]}
+            >
               <View style={styles.cardTopo}>
-                <Ionicons name={f.icone} size={22} color="#FF98B9" />
-                <Text style={styles.cardTitulo}>{f.titulo}</Text>
+                <Ionicons name={f.icone} size={22} color={tema.accent} accessible={false} />
+                <Text
+                  accessibilityRole="header"
+                  style={[
+                    styles.cardTitulo,
+                    { color: tema.textPrimary, fontSize: tema.fontSize(16) },
+                  ]}
+                >
+                  {f.titulo}
+                </Text>
               </View>
-              <Text style={styles.cardTexto}>{f.texto}</Text>
+              <Text
+                style={[
+                  styles.cardTexto,
+                  {
+                    color: tema.textSecondary,
+                    fontSize: tema.fontSize(14),
+                    lineHeight: tema.fontSize(20),
+                  },
+                ]}
+              >
+                {f.texto}
+              </Text>
               {f.rota && (
-                <TouchableOpacity style={styles.botao} onPress={() => router.push(f.rota)}>
-                  <Text style={styles.botaoTexto}>Abrir</Text>
-                  <Ionicons name="arrow-forward" size={16} color="#FF98B9" />
+                <TouchableOpacity
+                  hitSlop={tema.hitSlopPadrao}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Abrir ${f.titulo}`}
+                  style={[
+                    styles.botao,
+                    { minHeight: tema.minTouchHeight },
+                  ]}
+                  onPress={() => router.push(f.rota)}
+                >
+                  <Text
+                    style={[
+                      styles.botaoTexto,
+                      { color: tema.accent, fontSize: tema.fontSize(14) },
+                    ]}
+                  >
+                    Abrir
+                  </Text>
+                  <Ionicons name="arrow-forward" size={16} color={tema.accent} accessible={false} />
                 </TouchableOpacity>
               )}
             </View>
@@ -100,12 +177,23 @@ export default function TelaGuia() {
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', marginVertical: 20 },
-  backButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(89, 89, 89, 0.6)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(107, 110, 107, 0.5)' },
-  titulo: { fontSize: 22, color: '#FF98B9', fontWeight: 'bold', marginLeft: 15 },
-  card: { backgroundColor: 'rgba(67, 70, 67, 0.8)', padding: 20, borderRadius: 20, marginBottom: 15, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' },
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  titulo: { fontWeight: 'bold', marginLeft: 15 },
+  card: {
+    padding: 20,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
   cardTopo: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
-  cardTitulo: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
-  cardTexto: { color: 'rgba(209, 209, 209, 0.8)', fontSize: 14, lineHeight: 20 },
+  cardTitulo: { fontWeight: 'bold' },
+  cardTexto: {},
   botao: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, marginTop: 12 },
-  botaoTexto: { color: '#FF98B9', fontWeight: 'bold', fontSize: 14 },
+  botaoTexto: { fontWeight: 'bold' },
 });

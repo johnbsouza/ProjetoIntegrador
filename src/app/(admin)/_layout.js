@@ -10,19 +10,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import BotaoAcessibilidade from '../../components/BotaoAcessibilidade';
 import { auth } from '../../config/firebase';
-
-const COLORS = {
-  drawerBg: '#434643',
-  drawerHeaderBg: '#595959',
-  borderSubtle: '#6B6E6B',
-  accent: '#FF98B9',
-  textPrimary: '#FFFFFF',
-  textSecondary: '#D1D1D1',
-  textMuted: '#A0A3A0',
-  textOnAccent: '#1E201E',
-  danger: '#FF7B7B',
-};
+import { useAcessibilidade } from '../../context/AcessibilidadeContext';
 
 const MENU_PRINCIPAL_ADMIN = [
   { name: 'index', label: 'Dashboard', icon: 'pie-chart-outline' },
@@ -51,28 +42,55 @@ const ROTAS_SECUNDARIAS_ADMIN = [
 
 function CustomAdminDrawerContent(props) {
   const router = useRouter();
+  const { tema, config } = useAcessibilidade();
   const { state, navigation } = props;
   const rotaAtual = state?.routes?.[state.index]?.name;
 
-  async function handleLogout() {
-    try {
-      await signOut(auth);
-      router.replace('/login');
-    } catch (error) {
-      console.error('Erro ao encerrar sessão:', error);
-      Alert.alert('Erro', 'Não foi possível encerrar a sessão.');
-    }
+  function handleLogout() {
+    Alert.alert('Sair da Conta', 'Tem certeza de que deseja encerrar a sessão?', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Sair',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            if (navigation && typeof navigation.closeDrawer === 'function') {
+              navigation.closeDrawer();
+            }
+            await signOut(auth);
+          } catch (error) {
+            console.error('Erro ao encerrar sessão:', error);
+          } finally {
+            router.replace('/');
+          }
+        },
+      },
+    ]);
   }
 
   return (
-    <View style={styles.drawerContainer}>
-      <View style={styles.drawerHeader}>
-        <Text style={styles.brandTitle}>Lirium Esmalteria & Spa</Text>
-        <Text style={styles.brandSub}>Painel Administrativo</Text>
+    <View style={[styles.drawerContainer, { backgroundColor: tema.bgPrimary }]}>
+      <View
+        style={[
+          styles.drawerHeader,
+          {
+            backgroundColor: tema.bgSurface,
+            borderBottomColor: tema.borderSubtle,
+          },
+        ]}
+      >
+        <Text style={[styles.brandTitle, { color: tema.accent, fontSize: tema.fontSize(16) }]}>
+          Lirium Esmalteria & Spa
+        </Text>
+        {!config.modoCalmo && (
+          <Text style={[styles.brandSub, { color: tema.textMuted, fontSize: tema.fontSize(12) }]}>
+            Painel Administrativo
+          </Text>
+        )}
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { gap: 4 + tema.espacoExtra }]}
         showsVerticalScrollIndicator={false}
       >
         {MENU_PRINCIPAL_ADMIN.map((item) => {
@@ -80,7 +98,18 @@ function CustomAdminDrawerContent(props) {
           return (
             <TouchableOpacity
               key={item.name}
-              style={[styles.itemBtn, ativa && styles.itemBtnAtivo]}
+              hitSlop={tema.hitSlopPadrao}
+              accessibilityRole="button"
+              accessibilityLabel={item.label}
+              accessibilityState={{ selected: ativa }}
+              style={[
+                styles.itemBtn,
+                {
+                  minHeight: tema.minTouchHeight,
+                  backgroundColor: ativa ? tema.accent : 'transparent',
+                  borderColor: config.altoContraste ? tema.borderSubtle : 'transparent',
+                },
+              ]}
               onPress={() => {
                 navigation.navigate(item.name);
                 if (typeof navigation.closeDrawer === 'function') {
@@ -91,9 +120,18 @@ function CustomAdminDrawerContent(props) {
               <Ionicons
                 name={item.icon}
                 size={20}
-                color={ativa ? COLORS.textOnAccent : COLORS.textSecondary}
+                color={ativa ? tema.textOnAccent : tema.textSecondary}
               />
-              <Text style={[styles.itemTexto, ativa && styles.itemTextoAtivo]}>
+              <Text
+                style={[
+                  styles.itemTexto,
+                  {
+                    color: ativa ? tema.textOnAccent : tema.textSecondary,
+                    fontSize: tema.fontSize(14),
+                    fontWeight: ativa ? 'bold' : '600',
+                  },
+                ]}
+              >
                 {item.label}
               </Text>
             </TouchableOpacity>
@@ -101,75 +139,87 @@ function CustomAdminDrawerContent(props) {
         })}
       </ScrollView>
 
-      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-        <Ionicons name="log-out-outline" size={20} color={COLORS.danger} />
-        <Text style={styles.logoutTexto}>Sair da conta</Text>
+      <TouchableOpacity
+        hitSlop={tema.hitSlopPadrao}
+        accessibilityRole="button"
+        accessibilityLabel="Sair da conta"
+        style={[
+          styles.logoutBtn,
+          {
+            borderTopColor: tema.borderSubtle,
+            minHeight: tema.minTouchHeight + 12,
+          },
+        ]}
+        onPress={handleLogout}
+      >
+        <Ionicons name="log-out-outline" size={20} color={tema.danger} />
+        <Text style={[styles.logoutTexto, { color: tema.danger, fontSize: tema.fontSize(14) }]}>
+          Sair da conta
+        </Text>
       </TouchableOpacity>
     </View>
   );
 }
 
 export default function AdminLayout() {
-  return (
-    <Drawer
-      drawerContent={(props) => <CustomAdminDrawerContent {...props} />}
-      screenOptions={{
-        headerShown: false,
-        drawerStyle: {
-          backgroundColor: COLORS.drawerBg,
-          width: 280,
-        },
-      }}
-    >
-      {MENU_PRINCIPAL_ADMIN.map((item) => (
-        <Drawer.Screen
-          key={item.name}
-          name={item.name}
-          options={{ title: item.label }}
-        />
-      ))}
+  const { tema } = useAcessibilidade();
 
-      {ROTAS_SECUNDARIAS_ADMIN.map((routeName) => (
-        <Drawer.Screen
-          key={routeName}
-          name={routeName}
-          options={{
-            drawerItemStyle: { display: 'none' },
-            href: null,
-          }}
-        />
-      ))}
-    </Drawer>
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Drawer
+        drawerContent={(props) => <CustomAdminDrawerContent {...props} />}
+        screenOptions={{
+          headerShown: false,
+          drawerStyle: {
+            backgroundColor: tema.bgPrimary,
+            width: 280,
+          },
+        }}
+      >
+        {MENU_PRINCIPAL_ADMIN.map((item) => (
+          <Drawer.Screen
+            key={item.name}
+            name={item.name}
+            options={{ title: item.label }}
+          />
+        ))}
+
+        {ROTAS_SECUNDARIAS_ADMIN.map((routeName) => (
+          <Drawer.Screen
+            key={routeName}
+            name={routeName}
+            options={{
+              drawerItemStyle: { display: 'none' },
+              href: null,
+            }}
+          />
+        ))}
+      </Drawer>
+
+      <BotaoAcessibilidade />
+    </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
   drawerContainer: {
     flex: 1,
-    backgroundColor: COLORS.drawerBg,
   },
   drawerHeader: {
-    backgroundColor: COLORS.drawerHeaderBg,
     paddingHorizontal: 20,
     paddingTop: 28,
     paddingBottom: 18,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderSubtle,
   },
   brandTitle: {
-    color: COLORS.accent,
-    fontSize: 16,
     fontWeight: 'bold',
   },
   brandSub: {
-    color: COLORS.textMuted,
-    fontSize: 12,
     marginTop: 2,
   },
   scrollContent: {
     paddingVertical: 12,
     paddingHorizontal: 12,
-    gap: 4,
   },
   itemBtn: {
     flexDirection: 'row',
@@ -178,18 +228,10 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     paddingHorizontal: 14,
     borderRadius: 24,
-  },
-  itemBtnAtivo: {
-    backgroundColor: COLORS.accent,
+    borderWidth: 1,
   },
   itemTexto: {
-    color: COLORS.textSecondary,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  itemTextoAtivo: {
-    color: COLORS.textOnAccent,
-    fontWeight: 'bold',
+    flex: 1,
   },
   logoutBtn: {
     flexDirection: 'row',
@@ -198,11 +240,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 16,
     borderTopWidth: 1,
-    borderTopColor: COLORS.borderSubtle,
   },
   logoutTexto: {
-    color: COLORS.danger,
-    fontSize: 14,
     fontWeight: 'bold',
   },
 });

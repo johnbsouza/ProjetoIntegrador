@@ -6,9 +6,11 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth, db } from '../../config/firebase';
+import { useAcessibilidade } from '../../context/AcessibilidadeContext';
 
 export default function PerfilProfissionalScreen() {
   const router = useRouter();
+  const { tema, config } = useAcessibilidade();
   const [usuario, setUsuario] = useState(null);
   const [carregando, setCarregando] = useState(true);
 
@@ -60,44 +62,132 @@ export default function PerfilProfissionalScreen() {
     ]);
   }
 
+  const nomeExibicao = usuario?.nome || 'Profissional Lirium';
+  const emailExibicao = usuario?.email || auth.currentUser?.email || '';
   const inicial = usuario?.nome ? usuario.nome.charAt(0).toUpperCase() : 'P';
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: tema.bgPrimary }]}>
       {carregando ? (
-        <ActivityIndicator color="#FF98B9" style={{ marginTop: 40 }} />
+        <ActivityIndicator
+          color={tema.accent}
+          accessibilityLabel="Carregando perfil"
+          style={{ marginTop: 40 }}
+        />
       ) : (
         <>
-          <View style={styles.header}>
-            <View style={styles.avatarContainer}>
+          <View
+            accessible
+            accessibilityLabel={`Perfil de ${nomeExibicao}, ${emailExibicao}`}
+            style={[
+              styles.header,
+              {
+                backgroundColor: tema.bgSurface,
+                borderBottomColor: tema.borderSubtle,
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.avatarContainer,
+                {
+                  backgroundColor: tema.accent,
+                  borderColor: config.altoContraste ? tema.accentBorder : 'transparent',
+                  borderWidth: config.altoContraste ? 2 : 0,
+                },
+              ]}
+            >
               {usuario?.fotoPerfil ? (
                 <Image source={{ uri: usuario.fotoPerfil }} style={styles.avatarImage} />
               ) : (
-                <Text style={styles.avatarText}>{inicial}</Text>
+                <Text
+                  style={[
+                    styles.avatarText,
+                    { color: tema.textOnAccent, fontSize: tema.fontSize(32) },
+                  ]}
+                >
+                  {inicial}
+                </Text>
               )}
             </View>
-            <Text style={styles.userName}>{usuario?.nome || 'Profissional Lirium'}</Text>
-            <Text style={styles.userEmail}>{usuario?.email || auth.currentUser?.email}</Text>
+            <Text
+              accessibilityRole="header"
+              style={[
+                styles.userName,
+                { color: tema.textPrimary, fontSize: tema.fontSize(20) },
+              ]}
+            >
+              {nomeExibicao}
+            </Text>
+            <Text
+              style={[
+                styles.userEmail,
+                { color: tema.textSecondary, fontSize: tema.fontSize(13) },
+              ]}
+            >
+              {emailExibicao}
+            </Text>
           </View>
 
-          <ScrollView contentContainerStyle={styles.menuContainer}>
-            <TouchableOpacity 
-              style={styles.menuItem}
+          <ScrollView
+            contentContainerStyle={[
+              styles.menuContainer,
+              { paddingBottom: 88 + tema.espacoExtra },
+            ]}
+            showsVerticalScrollIndicator={false}
+          >
+            <TouchableOpacity
+              hitSlop={tema.hitSlopPadrao}
+              accessibilityRole="button"
+              accessibilityLabel="Editar Perfil"
+              style={[
+                styles.menuItem,
+                {
+                  borderBottomColor: tema.borderSubtle,
+                  minHeight: tema.minTouchHeight,
+                  paddingVertical: 18 + tema.espacoExtra / 2,
+                },
+              ]}
               onPress={() => router.push('/(profissional)/editar-perfil')}
             >
               <View style={styles.menuIconInfo}>
-                <Ionicons name="create-outline" size={22} color="#D1D1D1" />
-                <Text style={styles.menuText}>Editar Perfil</Text>
+                <Ionicons name="create-outline" size={22} color={tema.textSecondary} accessible={false} />
+                <Text
+                  style={[
+                    styles.menuText,
+                    { color: tema.textPrimary, fontSize: tema.fontSize(16) },
+                  ]}
+                >
+                  Editar Perfil
+                </Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#D1D1D1" />
+              <Ionicons name="chevron-forward" size={20} color={tema.textSecondary} accessible={false} />
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={styles.logoutButton}
+            <TouchableOpacity
+              hitSlop={tema.hitSlopPadrao}
+              accessibilityRole="button"
+              accessibilityLabel="Sair da Conta"
+              style={[
+                styles.logoutButton,
+                {
+                  backgroundColor: tema.dangerSoft,
+                  borderColor: tema.danger,
+                  minHeight: tema.minTouchHeight,
+                  marginTop: 30 + tema.espacoExtra,
+                },
+              ]}
               onPress={handleLogout}
             >
-              <Ionicons name="log-out-outline" size={22} color="#FF4C4C" />
-              <Text style={styles.logoutText}>Sair da Conta</Text>
+              <Ionicons name="log-out-outline" size={22} color={tema.danger} accessible={false} />
+              <Text
+                style={[
+                  styles.logoutText,
+                  { color: tema.danger, fontSize: tema.fontSize(16) },
+                ]}
+              >
+                Sair da Conta
+              </Text>
             </TouchableOpacity>
           </ScrollView>
         </>
@@ -107,17 +197,42 @@ export default function PerfilProfissionalScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#434643' },
-  header: { alignItems: 'center', paddingTop: 40, paddingBottom: 25, backgroundColor: '#595959', borderBottomWidth: 1, borderBottomColor: '#6B6E6B' },
-  avatarContainer: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#FF98B9', justifyContent: 'center', alignItems: 'center', marginBottom: 12, overflow: 'hidden' },
+  container: { flex: 1 },
+  header: {
+    alignItems: 'center',
+    paddingTop: 40,
+    paddingBottom: 25,
+    borderBottomWidth: 1,
+  },
+  avatarContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+    overflow: 'hidden',
+  },
   avatarImage: { width: 80, height: 80, borderRadius: 40 },
-  avatarText: { fontSize: 32, fontWeight: 'bold', color: '#434643' },
-  userName: { fontSize: 20, fontWeight: 'bold', color: '#FFFFFF', marginBottom: 4 },
-  userEmail: { fontSize: 13, color: '#D1D1D1' },
+  avatarText: { fontWeight: 'bold' },
+  userName: { fontWeight: 'bold', marginBottom: 4 },
+  userEmail: {},
   menuContainer: { padding: 20 },
-  menuItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: '#6B6E6B' },
+  menuItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+  },
   menuIconInfo: { flexDirection: 'row', alignItems: 'center' },
-  menuText: { fontSize: 16, color: '#FFFFFF', marginLeft: 15 },
-  logoutButton: { flexDirection: 'row', alignItems: 'center', marginTop: 30, paddingVertical: 15, paddingHorizontal: 20, backgroundColor: 'rgba(255, 76, 76, 0.1)', borderRadius: 10, borderWidth: 1, borderColor: '#FF4C4C' },
-  logoutText: { fontSize: 16, fontWeight: 'bold', color: '#FF4C4C', marginLeft: 10 },
+  menuText: { marginLeft: 15 },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  logoutText: { fontWeight: 'bold', marginLeft: 10 },
 });

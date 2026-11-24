@@ -2,12 +2,23 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { db } from '../../config/firebase';
+import { useAcessibilidade } from '../../context/AcessibilidadeContext';
 
 export default function NovoProfissional() {
   const router = useRouter();
+  const { tema, config } = useAcessibilidade();
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [telefone, setTelefone] = useState('');
@@ -52,33 +63,101 @@ export default function NovoProfissional() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        
-        <Text style={styles.titulo}>Nova Profissional</Text>
-        <Text style={styles.subtitulo}>Cadastre uma colaboradora para receber agendamentos</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: tema.bgPrimary }]}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: 88 + tema.espacoExtra },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text
+          accessibilityRole="header"
+          style={[
+            styles.titulo,
+            { color: tema.accent, fontSize: tema.fontSize(22) },
+          ]}
+        >
+          Nova Profissional
+        </Text>
+        {!config.modoCalmo && (
+          <Text
+            style={[
+              styles.subtitulo,
+              { color: tema.textSecondary, fontSize: tema.fontSize(13) },
+            ]}
+          >
+            Cadastre uma colaboradora para receber agendamentos
+          </Text>
+        )}
 
-        {/* Nome Completo */}
-        <Text style={styles.label}>Nome Completo *</Text>
-        <View style={styles.inputBox}>
-          <Ionicons name="person-outline" size={20} color="#FF98B9" style={styles.iconInput} />
+        <Text
+          style={[
+            styles.label,
+            {
+              color: tema.textPrimary,
+              fontSize: tema.fontSize(14),
+              marginTop: 10 + tema.espacoExtra,
+            },
+          ]}
+        >
+          Nome Completo *
+        </Text>
+        <View
+          style={[
+            styles.inputBox,
+            {
+              backgroundColor: tema.bgSurface,
+              borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+              minHeight: Math.max(52, tema.minTouchHeight),
+            },
+          ]}
+        >
+          <Ionicons name="person-outline" size={20} color={tema.accent} style={styles.iconInput} accessible={false} />
           <TextInput
-            style={styles.input}
+            accessibilityLabel="Nome Completo obrigatório"
+            style={[
+              styles.input,
+              { color: tema.textPrimary, fontSize: tema.fontSize(15) },
+            ]}
             placeholder="Ex: Beatriz Silva"
-            placeholderTextColor="rgba(209, 209, 209, 0.5)"
+            placeholderTextColor={tema.textMuted}
             value={nome}
             onChangeText={setNome}
           />
         </View>
 
-        {/* E-mail */}
-        <Text style={styles.label}>E-mail de Acesso *</Text>
-        <View style={styles.inputBox}>
-          <Ionicons name="mail-outline" size={20} color="#FF98B9" style={styles.iconInput} />
+        <Text
+          style={[
+            styles.label,
+            {
+              color: tema.textPrimary,
+              fontSize: tema.fontSize(14),
+              marginTop: 10 + tema.espacoExtra,
+            },
+          ]}
+        >
+          E-mail de Acesso *
+        </Text>
+        <View
+          style={[
+            styles.inputBox,
+            {
+              backgroundColor: tema.bgSurface,
+              borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+              minHeight: Math.max(52, tema.minTouchHeight),
+            },
+          ]}
+        >
+          <Ionicons name="mail-outline" size={20} color={tema.accent} style={styles.iconInput} accessible={false} />
           <TextInput
-            style={styles.input}
+            accessibilityLabel="E-mail de Acesso obrigatório"
+            style={[
+              styles.input,
+              { color: tema.textPrimary, fontSize: tema.fontSize(15) },
+            ]}
             placeholder="beatriz@liriumesmalteria.com"
-            placeholderTextColor="rgba(209, 209, 209, 0.5)"
+            placeholderTextColor={tema.textMuted}
             keyboardType="email-address"
             autoCapitalize="none"
             value={email}
@@ -86,16 +165,39 @@ export default function NovoProfissional() {
           />
         </View>
 
-        {/* Telefone e Comissão */}
         <View style={styles.row}>
-          <View style={{ flex: 1, marginRight: 10 }}>
-            <Text style={styles.label}>Telefone / WhatsApp</Text>
-            <View style={styles.inputBox}>
-              <Ionicons name="call-outline" size={20} color="#FF98B9" style={styles.iconInput} />
+          <View style={{ flex: 1, marginRight: 10 + tema.espacoExtra }}>
+            <Text
+              style={[
+                styles.label,
+                {
+                  color: tema.textPrimary,
+                  fontSize: tema.fontSize(14),
+                  marginTop: 10 + tema.espacoExtra,
+                },
+              ]}
+            >
+              Telefone / WhatsApp
+            </Text>
+            <View
+              style={[
+                styles.inputBox,
+                {
+                  backgroundColor: tema.bgSurface,
+                  borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                  minHeight: Math.max(52, tema.minTouchHeight),
+                },
+              ]}
+            >
+              <Ionicons name="call-outline" size={20} color={tema.accent} style={styles.iconInput} accessible={false} />
               <TextInput
-                style={styles.input}
+                accessibilityLabel="Telefone ou WhatsApp"
+                style={[
+                  styles.input,
+                  { color: tema.textPrimary, fontSize: tema.fontSize(15) },
+                ]}
                 placeholder="(11) 99999-9999"
-                placeholderTextColor="rgba(209, 209, 209, 0.5)"
+                placeholderTextColor={tema.textMuted}
                 keyboardType="phone-pad"
                 value={telefone}
                 onChangeText={setTelefone}
@@ -104,13 +206,37 @@ export default function NovoProfissional() {
           </View>
 
           <View style={{ flex: 1 }}>
-            <Text style={styles.label}>Comissão (%) *</Text>
-            <View style={styles.inputBox}>
-              <Ionicons name="pie-chart-outline" size={20} color="#FF98B9" style={styles.iconInput} />
+            <Text
+              style={[
+                styles.label,
+                {
+                  color: tema.textPrimary,
+                  fontSize: tema.fontSize(14),
+                  marginTop: 10 + tema.espacoExtra,
+                },
+              ]}
+            >
+              Comissão (%) *
+            </Text>
+            <View
+              style={[
+                styles.inputBox,
+                {
+                  backgroundColor: tema.bgSurface,
+                  borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                  minHeight: Math.max(52, tema.minTouchHeight),
+                },
+              ]}
+            >
+              <Ionicons name="pie-chart-outline" size={20} color={tema.accent} style={styles.iconInput} accessible={false} />
               <TextInput
-                style={styles.input}
+                accessibilityLabel="Porcentagem de comissão obrigatória"
+                style={[
+                  styles.input,
+                  { color: tema.textPrimary, fontSize: tema.fontSize(15) },
+                ]}
                 placeholder="50"
-                placeholderTextColor="rgba(209, 209, 209, 0.5)"
+                placeholderTextColor={tema.textMuted}
                 keyboardType="numeric"
                 value={comissao}
                 onChangeText={setComissao}
@@ -119,63 +245,97 @@ export default function NovoProfissional() {
           </View>
         </View>
 
-        {/* Especialidades */}
-        <Text style={styles.label}>Especialidades</Text>
-        <View style={styles.inputBox}>
-          <Ionicons name="ribbon-outline" size={20} color="#FF98B9" style={styles.iconInput} />
+        <Text
+          style={[
+            styles.label,
+            {
+              color: tema.textPrimary,
+              fontSize: tema.fontSize(14),
+              marginTop: 10 + tema.espacoExtra,
+            },
+          ]}
+        >
+          Especialidades
+        </Text>
+        <View
+          style={[
+            styles.inputBox,
+            {
+              backgroundColor: tema.bgSurface,
+              borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+              minHeight: Math.max(52, tema.minTouchHeight),
+            },
+          ]}
+        >
+          <Ionicons name="ribbon-outline" size={20} color={tema.accent} style={styles.iconInput} accessible={false} />
           <TextInput
-            style={styles.input}
+            accessibilityLabel="Especialidades da profissional"
+            style={[
+              styles.input,
+              { color: tema.textPrimary, fontSize: tema.fontSize(15) },
+            ]}
             placeholder="Ex: Nail Art, Spa dos Pés, Alongamento em Gel"
-            placeholderTextColor="rgba(209, 209, 209, 0.5)"
+            placeholderTextColor={tema.textMuted}
             value={especialidades}
             onChangeText={setEspecialidades}
           />
         </View>
 
-        {/* Botão Cadastrar */}
         <TouchableOpacity
-          style={[styles.btnSalvar, salvando && { opacity: 0.6 }]}
+          hitSlop={tema.hitSlopPadrao}
+          accessibilityRole="button"
+          accessibilityLabel={salvando ? 'Cadastrando profissional' : 'Cadastrar profissional'}
+          accessibilityState={{ disabled: salvando, busy: salvando }}
+          style={[
+            styles.btnSalvar,
+            {
+              backgroundColor: tema.accent,
+              minHeight: Math.max(52, tema.minTouchHeight),
+            },
+            salvando && { opacity: 0.6 },
+          ]}
           onPress={handleSalvarProfissional}
           disabled={salvando}
         >
           {salvando ? (
-            <ActivityIndicator color="#1E201E" />
+            <ActivityIndicator color={tema.textOnAccent} />
           ) : (
-            <Text style={styles.btnTexto}>Cadastrar Profissional</Text>
+            <Text
+              style={[
+                styles.btnTexto,
+                { color: tema.textOnAccent, fontSize: tema.fontSize(16) },
+              ]}
+            >
+              Cadastrar Profissional
+            </Text>
           )}
         </TouchableOpacity>
-
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#434643' },
+  container: { flex: 1 },
   content: { padding: 20 },
-  titulo: { fontSize: 22, fontWeight: 'bold', color: '#FF98B9' },
-  subtitulo: { fontSize: 13, color: '#D1D1D1', marginTop: 3, marginBottom: 20 },
-  label: { color: '#FFF', fontSize: 14, fontWeight: '600', marginBottom: 8, marginTop: 10 },
+  titulo: { fontWeight: 'bold' },
+  subtitulo: { marginTop: 3, marginBottom: 20 },
+  label: { fontWeight: '600', marginBottom: 8 },
   inputBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#595959',
     borderRadius: 12,
     paddingHorizontal: 15,
-    height: 52,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   iconInput: { marginRight: 10 },
-  input: { flex: 1, color: '#FFF', fontSize: 15 },
+  input: { flex: 1 },
   row: { flexDirection: 'row', justifyContent: 'space-between' },
   btnSalvar: {
-    backgroundColor: '#FF98B9',
-    height: 52,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 30,
   },
-  btnTexto: { color: '#1E201E', fontSize: 16, fontWeight: 'bold' },
+  btnTexto: { fontWeight: 'bold' },
 });

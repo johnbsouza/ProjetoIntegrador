@@ -11,7 +11,7 @@ import {
   serverTimestamp,
   where,
 } from 'firebase/firestore';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -24,122 +24,54 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth, db } from '../../config/firebase';
-
-const COLORS = {
-  bgPrimary: '#434643',
-  bgSurface: '#595959',
-  bgElevated: '#383B38',
-  bgDark: '#2B2D2B',
-  borderSubtle: 'rgba(255,255,255,0.08)',
-  accent: '#FF98B9',
-  accentSoft: 'rgba(255, 152, 185, 0.12)',
-  accentBorder: 'rgba(255, 152, 185, 0.35)',
-  textPrimary: '#FFFFFF',
-  textSecondary: '#D1D1D1',
-  textMuted: '#A0A3A0',
-  textOnAccent: '#1E201E',
-  success: '#A5D6A7',
-  danger: '#FF7B7B',
-};
+import { useAcessibilidade } from '../../context/AcessibilidadeContext';
 
 const HORARIOS_PADRAO = ['09:00', '10:30', '13:00', '14:30', '16:00', '17:30'];
 const DIAS_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-const MESES = [
-  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
-];
 
-function formatarMoeda(valor) {
-  return `R$ ${(Number(valor) || 0).toFixed(2).replace('.', ',')}`;
-}
-
-function chunkArray(arr, size = 10) {
-  const chunks = [];
-  for (let i = 0; i < arr.length; i += size) {
-    chunks.push(arr.slice(i, i + size));
-  }
-  return chunks;
-}
-
-function isHorarioPassadoHoje(isoData, horarioStr, agora = new Date()) {
-  const mm = String(agora.getMonth() + 1).padStart(2, '0');
-  const dd = String(agora.getDate()).padStart(2, '0');
-  const hojeIso = `${agora.getFullYear()}-${mm}-${dd}`;
-
-  if (isoData !== hojeIso) return false;
-
-  const [hora, minuto] = horarioStr.split(':').map(Number);
-  const slotDate = new Date(
-    agora.getFullYear(),
-    agora.getMonth(),
-    agora.getDate(),
-    hora,
-    minuto,
-    0,
-    0
-  );
-
-  return slotDate <= agora;
-}
-
-function gerarGradeDoMes(ano, mes) {
+function gerarProximosDias(quantidade = 28) {
+  const dias = [];
   const hoje = new Date();
-  hoje.setHours(0, 0, 0, 0);
 
-  const primeiroDiaSemana = new Date(ano, mes, 1).getDay();
-  const totalDias = new Date(ano, mes + 1, 0).getDate();
-  const celulas = [];
+  for (let i = 0; i < quantidade; i++) {
+    const data = new Date(hoje);
+    data.setDate(hoje.getDate() + i);
 
-  for (let i = 0; i < primeiroDiaSemana; i++) celulas.push(null);
+    const ano = data.getFullYear();
+    const mes = String(data.getMonth() + 1).padStart(2, '0');
+    const dia = String(data.getDate()).padStart(2, '0');
 
-  for (let d = 1; d <= totalDias; d++) {
-    const data = new Date(ano, mes, d);
-    const mm = String(mes + 1).padStart(2, '0');
-    const dd = String(d).padStart(2, '0');
-
-    celulas.push({
-      iso: `${ano}-${mm}-${dd}`,
-      diaNumero: dd,
+    dias.push({
+      iso: `${ano}-${mes}-${dia}`,
+      diaNumero: dia,
       diaSemana: DIAS_SEMANA[data.getDay()],
-      formatada: `${dd}/${mm}/${ano}`,
-      rotuloCompleto: `${DIAS_SEMANA[data.getDay()]}, ${dd}/${mm}`,
-      passado: data < hoje,
-      ehHoje: data.getTime() === hoje.getTime(),
+      formatada: `${dia}/${mes}/${ano}`,
+      rotuloCompleto: `${DIAS_SEMANA[data.getDay()]}, ${dia}/${mes}`,
     });
   }
 
-  while (celulas.length % 7 !== 0) celulas.push(null);
-  return celulas;
+  return dias;
 }
 
 export default function AgendarServicoScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const { tema, config } = useAcessibilidade();
 
-  const idsParam = typeof params.ids === 'string' ? params.ids : '';
-  const idsKey = useMemo(
-    () =>
-      idsParam
-        .split(',')
-        .map((id) => id.trim())
-        .filter(Boolean)
-        .join(','),
+  const idsParam = params.ids || '';
+  const idsArray = useMemo(
+    () => (idsParam ? idsParam.split(',').map((id) => id.trim()).filter(Boolean) : []),
     [idsParam]
   );
 
-  const hojeRef = useMemo(() => new Date(), []);
-  const [mesVisivel, setMesVisivel] = useState({
-    ano: hojeRef.getFullYear(),
-    mes: hojeRef.getMonth(),
-  });
+  const pacoteId = params.pacoteId ? String(params.pacoteId) : '';
+  const nomePacoteParam = params.nomePacote ? String(params.nomePacote) : '';
+  const precoPacoteParam = Number(params.preco) || 0;
+  const isPacoteQuatroSessoes =
+    Boolean(pacoteId) &&
+    (params.frequenciaSemanal === '1_por_semana' || /4\s*sess/i.test(nomePacoteParam));
 
-  const gradeDoMes = useMemo(
-    () => gerarGradeDoMes(mesVisivel.ano, mesVisivel.mes),
-    [mesVisivel]
-  );
-
-  const estaNoMesAtual =
-    mesVisivel.ano === hojeRef.getFullYear() && mesVisivel.mes === hojeRef.getMonth();
+  const proximosDias = useMemo(() => gerarProximosDias(28), []);
 
   const [servicosEscolhidos, setServicosEscolhidos] = useState([]);
   const [profissionais, setProfissionais] = useState([]);
@@ -154,73 +86,62 @@ export default function AgendarServicoScreen() {
   const [carregandoHorarios, setCarregandoHorarios] = useState(false);
   const [salvando, setSalvando] = useState(false);
 
-  const mudarMes = useCallback((delta) => {
-    setMesVisivel((atual) => {
-      const nova = new Date(atual.ano, atual.mes + delta, 1);
-      return { ano: nova.getFullYear(), mes: nova.getMonth() };
-    });
-  }, []);
+  const datasSemanaisPacote = useMemo(() => {
+    if (!diaSelecionado) return [];
+    const base = new Date(`${diaSelecionado.iso}T12:00:00`);
+    const quantidadeSessoes = isPacoteQuatroSessoes ? 4 : 1;
+    const lista = [];
+
+    for (let s = 0; s < quantidadeSessoes; s++) {
+      const d = new Date(base);
+      d.setDate(base.getDate() + s * 7);
+      const ano = d.getFullYear();
+      const mes = String(d.getMonth() + 1).padStart(2, '0');
+      const dia = String(d.getDate()).padStart(2, '0');
+      lista.push({
+        sessaoNumero: s + 1,
+        iso: `${ano}-${mes}-${dia}`,
+        formatada: `${dia}/${mes}/${ano}`,
+        rotulo: `${DIAS_SEMANA[d.getDay()]}, ${dia}/${mes}/${ano}`,
+      });
+    }
+
+    return lista;
+  }, [diaSelecionado, isPacoteQuatroSessoes]);
 
   useEffect(() => {
-    let ativo = true;
-
     async function carregarDadosIniciais() {
       setCarregandoDados(true);
       try {
-        const ids = idsKey ? idsKey.split(',').filter(Boolean) : [];
         let listaServicos = [];
-
-        if (ids.length > 0) {
-          const chunks = chunkArray(ids, 10);
-          for (const grupoIds of chunks) {
-            const qServicos = query(
-              collection(db, 'servicos'),
-              where(documentId(), 'in', grupoIds)
-            );
-            const snapServicos = await getDocs(qServicos);
-            snapServicos.forEach((docSnap) => {
-              listaServicos.push({ id: docSnap.id, ...docSnap.data() });
-            });
-          }
-
-          const ordemMap = new Map(ids.map((id, idx) => [id, idx]));
-          listaServicos.sort(
-            (a, b) => (ordemMap.get(a.id) ?? 999) - (ordemMap.get(b.id) ?? 999)
-          );
+        if (idsArray.length > 0) {
+          const qServicos = query(collection(db, 'servicos'), where(documentId(), 'in', idsArray));
+          const snapServicos = await getDocs(qServicos);
+          snapServicos.forEach((docSnap) => {
+            listaServicos.push({ id: docSnap.id, ...docSnap.data() });
+          });
         }
+        setServicosEscolhidos(listaServicos);
 
-        const qProf = query(
-          collection(db, 'usuarios'),
-          where('nivelAcesso', '==', 'profissional')
-        );
+        const qProf = query(collection(db, 'usuarios'), where('nivelAcesso', '==', 'profissional'));
         const snapProf = await getDocs(qProf);
         const listaProf = [];
         snapProf.forEach((docSnap) => {
           listaProf.push({ id: docSnap.id, ...docSnap.data() });
         });
-
-        if (ativo) {
-          setServicosEscolhidos(listaServicos);
-          setProfissionais(listaProf);
-        }
+        setProfissionais(listaProf);
       } catch (error) {
         console.error('Erro ao carregar dados iniciais:', error);
-        if (ativo) {
-          Alert.alert('Erro', 'Não foi possível carregar os serviços ou profissionais.');
-        }
       } finally {
-        if (ativo) setCarregandoDados(false);
+        setCarregandoDados(false);
       }
     }
 
     carregarDadosIniciais();
-    return () => {
-      ativo = false;
-    };
-  }, [idsKey]);
+  }, [idsArray]);
 
-  const buscarHorariosOcupados = useCallback(async (profId, dataIso) => {
-    if (!profId || !dataIso) return [];
+  async function buscarHorariosOcupados(profId, dataIso) {
+    if (!profId || !dataIso) return;
     setCarregandoHorarios(true);
     try {
       const qAgendamentos = query(
@@ -230,29 +151,25 @@ export default function AgendarServicoScreen() {
       );
 
       const snapshot = await getDocs(qAgendamentos);
-      const ocupados = new Set();
+      const ocupados = [];
 
       snapshot.forEach((docSnap) => {
         const dados = docSnap.data();
         if (dados.status !== 'Cancelado' && dados.horario) {
-          ocupados.add(dados.horario);
+          ocupados.push(dados.horario);
         }
       });
 
-      const listaOcupados = Array.from(ocupados);
-      setHorariosOcupados(listaOcupados);
-      return listaOcupados;
+      setHorariosOcupados(ocupados);
     } catch (error) {
       console.error('Erro ao buscar horários ocupados:', error);
       Alert.alert('Erro', 'Não foi possível verificar a disponibilidade dos horários.');
-      return [];
     } finally {
       setCarregandoHorarios(false);
     }
-  }, []);
+  }
 
   function selecionarProfissional(prof) {
-    if (profissionalSelecionado?.id === prof.id) return;
     setProfissionalSelecionado(prof);
     setDiaSelecionado(null);
     setHorarioSelecionado(null);
@@ -261,10 +178,7 @@ export default function AgendarServicoScreen() {
 
   async function abrirModalDoDia(diaObj) {
     if (!profissionalSelecionado) {
-      Alert.alert(
-        'Escolha o profissional',
-        'Selecione primeiro um profissional para ver os horários do dia.'
-      );
+      Alert.alert('Escolha o profissional', 'Selecione primeiro um profissional para ver os horários do dia.');
       return;
     }
 
@@ -274,47 +188,24 @@ export default function AgendarServicoScreen() {
 
     setDiaSelecionado(diaObj);
     setModalVisivel(true);
-    const ocupadosAtualizados = await buscarHorariosOcupados(
-      profissionalSelecionado.id,
-      diaObj.iso
-    );
-
-    if (
-      horarioSelecionado &&
-      (ocupadosAtualizados.includes(horarioSelecionado) ||
-        isHorarioPassadoHoje(diaObj.iso, horarioSelecionado))
-    ) {
-      setHorarioSelecionado(null);
-    }
+    await buscarHorariosOcupados(profissionalSelecionado.id, diaObj.iso);
   }
 
-  function selecionarHorarioNoModal(horario, indisponivel) {
-    if (indisponivel) return;
+  function selecionarHorarioNoModal(horario) {
+    if (horariosOcupados.includes(horario)) return;
     setHorarioSelecionado(horario);
     setModalVisivel(false);
   }
 
-  const precoTotal = useMemo(
-    () =>
-      servicosEscolhidos.reduce((acc, curr) => acc + (Number(curr.preco) || 0), 0),
-    [servicosEscolhidos]
-  );
-
-  const nomesServicosString = useMemo(
-    () => servicosEscolhidos.map((s) => s.nome).filter(Boolean).join(', '),
-    [servicosEscolhidos]
-  );
-
-  const podeConfirmar =
-    servicosEscolhidos.length > 0 &&
-    Boolean(profissionalSelecionado) &&
-    Boolean(diaSelecionado) &&
-    Boolean(horarioSelecionado) &&
-    !salvando;
+  const precoServicos = servicosEscolhidos.reduce((acc, curr) => acc + (Number(curr.preco) || 0), 0);
+  const precoTotal = pacoteId ? precoPacoteParam : precoServicos;
+  const tituloResumo = pacoteId
+    ? nomePacoteParam || 'Pacote Promocional'
+    : servicosEscolhidos.map((s) => s.nome).join(', ') || 'Nenhum serviço';
 
   async function confirmarAgendamento() {
-    if (servicosEscolhidos.length === 0) {
-      Alert.alert('Atenção', 'Nenhum serviço selecionado.');
+    if (!pacoteId && servicosEscolhidos.length === 0) {
+      Alert.alert('Atenção', 'Nenhum serviço ou pacote selecionado.');
       return;
     }
     if (!profissionalSelecionado) {
@@ -325,71 +216,88 @@ export default function AgendarServicoScreen() {
       Alert.alert('Atenção', 'Por favor, escolha um dia e um horário disponível.');
       return;
     }
-    if (isHorarioPassadoHoje(diaSelecionado.iso, horarioSelecionado)) {
-      setHorarioSelecionado(null);
-      Alert.alert('Horário expirado', 'Esse horário já passou. Escolha outro horário.');
-      return;
-    }
 
     const usuarioAtual = auth.currentUser;
     if (!usuarioAtual) {
-      Alert.alert('Erro', 'Usuário não autenticado.');
+      Alert.alert('Erro', 'Utilizador não autenticado.');
       return;
     }
 
     setSalvando(true);
     try {
-      const qConflito = query(
-        collection(db, 'agendamentos'),
-        where('profissionalId', '==', profissionalSelecionado.id),
-        where('dataAgendamento', '==', diaSelecionado.iso),
-        where('horario', '==', horarioSelecionado)
-      );
-      const snapConflito = await getDocs(qConflito);
-      const jaReservado = snapConflito.docs.some(
-        (d) => d.data().status !== 'Cancelado'
-      );
+      const datasParaConfirmar = isPacoteQuatroSessoes
+        ? datasSemanaisPacote
+        : [
+            {
+              sessaoNumero: 1,
+              iso: diaSelecionado.iso,
+              formatada: diaSelecionado.formatada,
+              rotulo: diaSelecionado.rotuloCompleto,
+            },
+          ];
 
-      if (jaReservado) {
-        await buscarHorariosOcupados(profissionalSelecionado.id, diaSelecionado.iso);
-        setHorarioSelecionado(null);
-        Alert.alert(
-          'Horário indisponível',
-          'Esse horário acabou de ser reservado por outra pessoa. Escolha outro.'
+      for (const sessaoData of datasParaConfirmar) {
+        const qConflito = query(
+          collection(db, 'agendamentos'),
+          where('profissionalId', '==', profissionalSelecionado.id),
+          where('dataAgendamento', '==', sessaoData.iso),
+          where('horario', '==', horarioSelecionado)
         );
-        return;
+        const snapConflito = await getDocs(qConflito);
+        const jaReservado = snapConflito.docs.some((d) => d.data().status !== 'Cancelado');
+
+        if (jaReservado) {
+          await buscarHorariosOcupados(profissionalSelecionado.id, diaSelecionado.iso);
+          setHorarioSelecionado(null);
+          Alert.alert(
+            'Horário indisponível',
+            `O horário ${horarioSelecionado} em ${sessaoData.formatada} já está ocupado. Escolha outro.`
+          );
+          return;
+        }
       }
 
       const userDocSnap = await getDoc(doc(db, 'usuarios', usuarioAtual.uid));
       const userData = userDocSnap.exists() ? userDocSnap.data() : {};
 
-      await addDoc(collection(db, 'agendamentos'), {
-        clienteId: usuarioAtual.uid,
-        clienteNome: userData.nome || 'Cliente',
-        clienteEmail: usuarioAtual.email || '',
-        clienteFoto: userData.fotoPerfil || '',
-        profissionalId: profissionalSelecionado.id,
-        profissionalNome: profissionalSelecionado.nome,
-        servicoIds: servicosEscolhidos.map((s) => s.id),
-        servicoNome: nomesServicosString,
-        preco: precoTotal,
-        dataAgendamento: diaSelecionado.iso,
-        dataFormatada: diaSelecionado.formatada,
-        horario: horarioSelecionado,
-        status: 'Confirmado',
-        dataCriacao: serverTimestamp(),
-      });
+      const valorPorAgendamento =
+        datasParaConfirmar.length > 1
+          ? Number((precoTotal / datasParaConfirmar.length).toFixed(2))
+          : precoTotal;
 
-      Alert.alert(
-        'Sucesso',
-        `Agendamento confirmado para ${diaSelecionado.formatada} às ${horarioSelecionado}!`,
-        [
-          {
-            text: 'Ver Agendamentos',
-            onPress: () => router.replace('/(cliente)/agenda'),
-          },
-        ]
-      );
+      for (const sessaoData of datasParaConfirmar) {
+        const nomeRotulo = isPacoteQuatroSessoes
+          ? `${tituloResumo} (Sessão ${sessaoData.sessaoNumero}/4 - 1x/semana)`
+          : tituloResumo;
+
+        await addDoc(collection(db, 'agendamentos'), {
+          clienteId: usuarioAtual.uid,
+          clienteNome: userData.nome || 'Cliente',
+          clienteEmail: usuarioAtual.email || '',
+          clienteFoto: userData.fotoPerfil || '',
+          profissionalId: profissionalSelecionado.id,
+          profissionalNome: profissionalSelecionado.nome,
+          servicoNome: nomeRotulo,
+          pacoteId: pacoteId || null,
+          sessaoNumero: sessaoData.sessaoNumero,
+          totalSessoes: datasParaConfirmar.length,
+          frequencia: isPacoteQuatroSessoes ? 'semanal' : 'unica',
+          preco: valorPorAgendamento,
+          dataAgendamento: sessaoData.iso,
+          dataFormatada: sessaoData.formatada,
+          horario: horarioSelecionado,
+          status: 'Confirmado',
+          dataCriacao: serverTimestamp(),
+        });
+      }
+
+      const mensagemSucesso = isPacoteQuatroSessoes
+        ? `Pacote confirmado! As 4 sessões foram agendadas para 1x por semana às ${horarioSelecionado}, começando em ${diaSelecionado.formatada}.`
+        : `Agendamento confirmado para ${diaSelecionado.formatada} às ${horarioSelecionado}!`;
+
+      Alert.alert('Sucesso', mensagemSucesso, [
+        { text: 'Ver Agendamentos', onPress: () => router.replace('/(cliente)/agenda') },
+      ]);
     } catch (error) {
       console.error('Erro ao confirmar agendamento:', error);
       Alert.alert('Erro', 'Não foi possível concluir o agendamento.');
@@ -398,63 +306,167 @@ export default function AgendarServicoScreen() {
     }
   }
 
-  const agoraModal = new Date();
-
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.topBar}>
+    <SafeAreaView style={[styles.container, { backgroundColor: tema.bgPrimary }]}>
+      <View
+        style={[
+          styles.topBar,
+          {
+            backgroundColor: tema.bgSurface,
+            borderBottomColor: tema.borderSubtle,
+          },
+        ]}
+      >
         <TouchableOpacity
+          hitSlop={tema.hitSlopPadrao}
+          accessibilityRole="button"
+          accessibilityLabel="Voltar para a tela anterior"
           onPress={() => router.back()}
-          style={styles.backButton}
-          accessibilityLabel="Voltar"
+          style={[
+            styles.backButton,
+            {
+              minWidth: tema.minTouchHeight,
+              minHeight: tema.minTouchHeight,
+              alignItems: 'center',
+              justifyContent: 'center',
+            },
+          ]}
         >
-          <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
+          <Ionicons name="arrow-back" size={24} color={tema.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.topTitle}>Concluir Agendamento</Text>
-        <View style={{ width: 24 }} />
+        <Text
+          accessibilityRole="header"
+          style={[
+            styles.topTitle,
+            { color: tema.textPrimary, fontSize: tema.fontSize(18) },
+          ]}
+        >
+          Concluir Agendamento
+        </Text>
+        <View style={{ width: Math.max(24, tema.minTouchHeight) }} />
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: 88 + tema.espacoExtra },
+        ]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.resumoCard}>
-          <Text style={styles.resumoLabel}>
-            Serviços Selecionados ({servicosEscolhidos.length})
+        <View
+          accessible
+          accessibilityLabel={`${pacoteId ? 'Pacote Selecionado' : 'Serviços Selecionados'}: ${tituloResumo}. Total: R$ ${precoTotal.toFixed(2).replace('.', ',')}`}
+          style={[
+            styles.resumoCard,
+            {
+              backgroundColor: tema.bgSurface,
+              borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+              marginBottom: 20 + tema.espacoExtra,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.resumoLabel,
+              { color: tema.textSecondary, fontSize: tema.fontSize(12) },
+            ]}
+          >
+            {pacoteId
+              ? 'Pacote Selecionado'
+              : `Serviços Selecionados (${servicosEscolhidos.length})`}
           </Text>
-          <Text style={styles.resumoServico}>
-            {nomesServicosString || 'Nenhum serviço'}
+          <Text
+            style={[
+              styles.resumoServico,
+              { color: tema.textPrimary, fontSize: tema.fontSize(15) },
+            ]}
+          >
+            {tituloResumo}
           </Text>
-          <Text style={styles.resumoPreco}>Total: {formatarMoeda(precoTotal)}</Text>
+          {isPacoteQuatroSessoes && (
+            <Text
+              style={[
+                styles.regraPacoteBadge,
+                { color: tema.accent, fontSize: tema.fontSize(12) },
+              ]}
+            >
+              Regra do pacote: 4 sessões, sendo 1 sessão por semana no mesmo dia e horário.
+            </Text>
+          )}
+          <Text
+            style={[
+              styles.resumoPreco,
+              { color: tema.accent, fontSize: tema.fontSize(16) },
+            ]}
+          >
+            Total: R$ {precoTotal.toFixed(2).replace('.', ',')}
+          </Text>
         </View>
 
-        <Text style={styles.secaoTitulo}>1. Escolha o Profissional</Text>
+        <Text
+          accessibilityRole="header"
+          style={[
+            styles.secaoTitulo,
+            { color: tema.accent, fontSize: tema.fontSize(15) },
+          ]}
+        >
+          1. Escolha o Profissional
+        </Text>
         {carregandoDados ? (
-          <ActivityIndicator color={COLORS.accent} style={{ marginVertical: 15 }} />
+          <ActivityIndicator color={tema.accent} style={{ marginVertical: 15 }} />
         ) : profissionais.length === 0 ? (
-          <Text style={styles.textoVazio}>Nenhum profissional disponível.</Text>
+          <Text
+            style={[
+              styles.textoVazio,
+              { color: tema.textSecondary, fontSize: tema.fontSize(13) },
+            ]}
+          >
+            Nenhum profissional disponível.
+          </Text>
         ) : (
-          <View style={styles.gridProfissionais}>
+          <View
+            style={[
+              styles.gridProfissionais,
+              { gap: 10 + tema.espacoExtra, marginBottom: 16 + tema.espacoExtra },
+            ]}
+          >
             {profissionais.map((prof) => {
               const selecionado = profissionalSelecionado?.id === prof.id;
               return (
                 <TouchableOpacity
                   key={prof.id}
+                  hitSlop={tema.hitSlopPadrao}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Profissional ${prof.nome}`}
+                  accessibilityState={{ selected: selecionado }}
                   style={[
                     styles.cardProfissional,
-                    selecionado && styles.cardProfissionalSelecionado,
+                    {
+                      backgroundColor: selecionado ? tema.accentSoft : tema.bgSurface,
+                      borderColor: selecionado
+                        ? tema.accent
+                        : config.altoContraste
+                          ? tema.borderSubtle
+                          : 'rgba(255,255,255,0.05)',
+                      minHeight: tema.minTouchHeight,
+                    },
                   ]}
                   onPress={() => selecionarProfissional(prof)}
                 >
                   <Ionicons
-                    name={selecionado ? 'checkbox' : 'square-outline'}
+                    name={selecionado ? 'checkbox-outline' : 'square-outline'}
                     size={20}
-                    color={selecionado ? COLORS.accent : COLORS.textMuted}
+                    color={selecionado ? tema.accent : tema.textMuted}
+                    accessible={false}
                   />
                   <Text
                     style={[
                       styles.nomeProfissional,
-                      selecionado && styles.nomeProfissionalSelecionado,
+                      {
+                        color: selecionado ? tema.accent : tema.textPrimary,
+                        fontSize: tema.fontSize(15),
+                        fontWeight: selecionado ? 'bold' : 'normal',
+                      },
                     ]}
                   >
                     {prof.nome}
@@ -465,99 +477,165 @@ export default function AgendarServicoScreen() {
           </View>
         )}
 
-        <Text style={styles.secaoTitulo}>2. Clique no Dia para Ver os Horários</Text>
-        <View style={styles.calendarioCard}>
-          <View style={styles.calendarioHeader}>
-            <TouchableOpacity
-              onPress={() => mudarMes(-1)}
-              disabled={estaNoMesAtual}
-              style={[styles.botaoMes, estaNoMesAtual && styles.botaoMesDesabilitado]}
-            >
-              <Ionicons name="chevron-back" size={20} color={COLORS.textPrimary} />
-            </TouchableOpacity>
-
-            <Text style={styles.calendarioMesTitulo}>
-              {MESES[mesVisivel.mes]} {mesVisivel.ano}
-            </Text>
-
-            <TouchableOpacity onPress={() => mudarMes(1)} style={styles.botaoMes}>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textPrimary} />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.calendarioLinha}>
-            {DIAS_SEMANA.map((d) => (
-              <View key={d} style={styles.celulaCalendario}>
-                <Text style={styles.cabecalhoSemana}>{d}</Text>
-              </View>
-            ))}
-          </View>
-
-          <View style={styles.calendarioLinha}>
-            {gradeDoMes.map((diaObj, index) => {
-              if (!diaObj) {
-                return <View key={`vazio-${index}`} style={styles.celulaCalendario} />;
-              }
-              const ativo = diaSelecionado?.iso === diaObj.iso;
-              return (
-                <View key={diaObj.iso} style={styles.celulaCalendario}>
-                  <TouchableOpacity
-                    disabled={diaObj.passado}
-                    onPress={() => abrirModalDoDia(diaObj)}
-                    style={[
-                      styles.cardDia,
-                      diaObj.ehHoje && styles.cardDiaHoje,
-                      diaObj.passado && styles.cardDiaPassado,
-                      ativo && styles.cardDiaSelecionado,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.diaNumeroTexto,
-                        diaObj.passado && styles.diaNumeroPassado,
-                        ativo && styles.textoEscuro,
-                      ]}
-                    >
-                      {diaObj.diaNumero}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              );
-            })}
-          </View>
+        <Text
+          accessibilityRole="header"
+          style={[
+            styles.secaoTitulo,
+            { color: tema.accent, fontSize: tema.fontSize(15) },
+          ]}
+        >
+          {isPacoteQuatroSessoes
+            ? '2. Escolha o Dia Inicial (1 sessão por semana)'
+            : '2. Clique no Dia para Ver os Horários'}
+        </Text>
+        <View
+          style={[
+            styles.gridDias,
+            { gap: 8 + tema.espacoExtra, marginBottom: 16 + tema.espacoExtra },
+          ]}
+        >
+          {proximosDias.map((diaObj) => {
+            const ativo = diaSelecionado?.iso === diaObj.iso;
+            return (
+              <TouchableOpacity
+                key={diaObj.iso}
+                hitSlop={tema.hitSlopPadrao}
+                accessibilityRole="button"
+                accessibilityLabel={diaObj.rotuloCompleto}
+                accessibilityState={{ selected: ativo }}
+                style={[
+                  styles.cardDia,
+                  {
+                    backgroundColor: ativo ? tema.accent : tema.bgSurface,
+                    borderColor: ativo
+                      ? tema.accent
+                      : config.altoContraste
+                        ? tema.borderSubtle
+                        : 'rgba(255,255,255,0.06)',
+                    minHeight: tema.minTouchHeight,
+                    justifyContent: 'center',
+                  },
+                ]}
+                onPress={() => abrirModalDoDia(diaObj)}
+              >
+                <Text
+                  style={[
+                    styles.diaSemanaTexto,
+                    {
+                      color: ativo ? tema.textOnAccent : tema.textSecondary,
+                      fontSize: tema.fontSize(11),
+                    },
+                  ]}
+                >
+                  {diaObj.diaSemana}
+                </Text>
+                <Text
+                  style={[
+                    styles.diaNumeroTexto,
+                    {
+                      color: ativo ? tema.textOnAccent : tema.textPrimary,
+                      fontSize: tema.fontSize(15),
+                    },
+                  ]}
+                >
+                  {diaObj.diaNumero}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
         {diaSelecionado && (
           <TouchableOpacity
-            style={styles.resumoSelecaoDataHora}
+            hitSlop={tema.hitSlopPadrao}
+            accessibilityRole="button"
+            accessibilityLabel={`Data escolhida: ${diaSelecionado.rotuloCompleto}. ${
+              horarioSelecionado
+                ? `Horário selecionado: ${horarioSelecionado}. Toque para alterar`
+                : 'Toque aqui para escolher um horário disponível'
+            }`}
+            style={[
+              styles.resumoSelecaoDataHora,
+              {
+                backgroundColor: tema.bgElevated,
+                borderColor: tema.accentBorder,
+                minHeight: tema.minTouchHeight,
+                marginBottom: 22 + tema.espacoExtra,
+              },
+            ]}
             onPress={() => abrirModalDoDia(diaSelecionado)}
           >
-            <View style={{ flex: 1 }}>
-              <Text style={styles.resumoDataHoraTitulo}>
+            <View style={{ flex: 1, gap: 4 }}>
+              <Text
+                style={[
+                  styles.resumoDataHoraTitulo,
+                  { color: tema.textPrimary, fontSize: tema.fontSize(13) },
+                ]}
+              >
                 Data escolhida: {diaSelecionado.rotuloCompleto} ({diaSelecionado.formatada})
               </Text>
-              <Text style={styles.resumoDataHoraSub}>
+              <Text
+                style={[
+                  styles.resumoDataHoraSub,
+                  { color: tema.accent, fontSize: tema.fontSize(12) },
+                ]}
+              >
                 {horarioSelecionado
                   ? `Horário selecionado: ${horarioSelecionado}`
                   : 'Toque aqui para escolher um horário disponível'}
               </Text>
+              {isPacoteQuatroSessoes && (
+                <Text
+                  style={[
+                    styles.resumoDataHoraSub,
+                    { color: tema.textSecondary, fontSize: tema.fontSize(11) },
+                  ]}
+                >
+                  Sessões semanais:{' '}
+                  {datasSemanaisPacote.map((s) => `${s.sessaoNumero}ª (${s.formatada})`).join(' • ')}
+                </Text>
+              )}
             </View>
-            <Ionicons name="time-outline" size={22} color={COLORS.accent} />
+            <Ionicons name="time-outline" size={22} color={tema.accent} accessible={false} />
           </TouchableOpacity>
         )}
 
         <TouchableOpacity
+          hitSlop={tema.hitSlopPadrao}
+          accessibilityRole="button"
+          accessibilityLabel={
+            salvando
+              ? isPacoteQuatroSessoes
+                ? 'Confirmando compra e agendamento do pacote'
+                : 'Confirmando agendamento'
+              : isPacoteQuatroSessoes
+                ? 'Confirmar Compra e Agendamento'
+                : 'Confirmar Agendamento'
+          }
+          accessibilityState={{ disabled: salvando, busy: salvando }}
           style={[
             styles.botaoConfirmar,
-            !podeConfirmar && styles.botaoConfirmarDesabilitado,
+            {
+              backgroundColor: tema.accent,
+              minHeight: tema.minTouchHeight,
+              justifyContent: 'center',
+            },
+            salvando && { opacity: 0.6 },
           ]}
           onPress={confirmarAgendamento}
-          disabled={!podeConfirmar}
+          disabled={salvando}
         >
           {salvando ? (
-            <ActivityIndicator color={COLORS.textOnAccent} />
+            <ActivityIndicator color={tema.textOnAccent} />
           ) : (
-            <Text style={styles.textoBotaoConfirmar}>Confirmar Agendamento</Text>
+            <Text
+              style={[
+                styles.textoBotaoConfirmar,
+                { color: tema.textOnAccent, fontSize: tema.fontSize(16) },
+              ]}
+            >
+              {isPacoteQuatroSessoes ? 'Confirmar Compra e Agendar' : 'Confirmar Agendamento'}
+            </Text>
           )}
         </TouchableOpacity>
       </ScrollView>
@@ -566,63 +644,118 @@ export default function AgendarServicoScreen() {
         visible={modalVisivel}
         transparent
         animationType="fade"
+        accessibilityViewIsModal
         onRequestClose={() => setModalVisivel(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
+          <View
+            style={[
+              styles.modalCard,
+              {
+                backgroundColor: tema.bgElevated,
+                borderColor: tema.accentBorder,
+              },
+            ]}
+          >
             <View style={styles.modalHeader}>
               <View style={{ flex: 1, marginRight: 10 }}>
-                <Text style={styles.modalTitulo}>Horários Disponíveis</Text>
-                <Text style={styles.modalSubtitulo}>
-                  {profissionalSelecionado?.nome} • {diaSelecionado?.rotuloCompleto} (
-                  {diaSelecionado?.formatada})
+                <Text
+                  accessibilityRole="header"
+                  style={[
+                    styles.modalTitulo,
+                    { color: tema.textPrimary, fontSize: tema.fontSize(18) },
+                  ]}
+                >
+                  Horários Disponíveis
+                </Text>
+                <Text
+                  style={[
+                    styles.modalSubtitulo,
+                    { color: tema.accent, fontSize: tema.fontSize(12) },
+                  ]}
+                >
+                  {profissionalSelecionado?.nome} • {diaSelecionado?.rotuloCompleto} ({diaSelecionado?.formatada})
                 </Text>
               </View>
               <TouchableOpacity
+                hitSlop={tema.hitSlopPadrao}
+                accessibilityRole="button"
+                accessibilityLabel="Fechar janela de horários"
                 onPress={() => setModalVisivel(false)}
-                style={styles.botaoFecharModal}
+                style={[
+                  styles.botaoFecharModal,
+                  {
+                    backgroundColor: tema.bgSurface,
+                    minWidth: tema.minTouchHeight,
+                    minHeight: tema.minTouchHeight,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  },
+                ]}
               >
-                <Ionicons name="close" size={22} color={COLORS.textPrimary} />
+                <Ionicons name="close" size={22} color={tema.textPrimary} />
               </TouchableOpacity>
             </View>
 
             {carregandoHorarios ? (
               <ActivityIndicator
                 size="large"
-                color={COLORS.accent}
+                color={tema.accent}
+                accessibilityLabel="Carregando horários disponíveis"
                 style={{ marginVertical: 30 }}
               />
             ) : (
-              <View style={styles.modalGridHorarios}>
+              <View
+                style={[
+                  styles.modalGridHorarios,
+                  { gap: 10 + tema.espacoExtra },
+                ]}
+              >
                 {HORARIOS_PADRAO.map((horario) => {
                   const ocupado = horariosOcupados.includes(horario);
-                  const passadoHoje = diaSelecionado
-                    ? isHorarioPassadoHoje(diaSelecionado.iso, horario, agoraModal)
-                    : false;
-                  const indisponivel = ocupado || passadoHoje;
-                  const selecionado = horarioSelecionado === horario && !indisponivel;
-
-                  let labelStatus = 'Livre';
-                  if (ocupado) labelStatus = 'Ocupado';
-                  else if (passadoHoje) labelStatus = 'Encerrado';
-                  else if (selecionado) labelStatus = 'Selecionado';
+                  const selecionado = horarioSelecionado === horario && !ocupado;
+                  const statusTexto = ocupado ? 'Ocupado' : selecionado ? 'Selecionado' : 'Livre';
 
                   return (
                     <TouchableOpacity
                       key={horario}
-                      disabled={indisponivel}
-                      onPress={() => selecionarHorarioNoModal(horario, indisponivel)}
+                      hitSlop={tema.hitSlopPadrao}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Horário ${horario}, ${statusTexto}`}
+                      accessibilityState={{ disabled: ocupado, selected: selecionado }}
+                      disabled={ocupado}
+                      onPress={() => selecionarHorarioNoModal(horario)}
                       style={[
                         styles.slotHorario,
-                        indisponivel && styles.slotOcupado,
-                        selecionado && styles.slotSelecionado,
+                        {
+                          backgroundColor: tema.bgSurface,
+                          borderColor: config.altoContraste
+                            ? tema.accentBorder
+                            : tema.borderSubtle,
+                          minHeight: tema.minTouchHeight,
+                        },
+                        ocupado && {
+                          backgroundColor: tema.bgPrimary,
+                          borderColor: tema.danger,
+                          opacity: 0.55,
+                        },
+                        selecionado && {
+                          backgroundColor: tema.accent,
+                          borderColor: tema.accent,
+                        },
                       ]}
                     >
                       <Text
                         style={[
                           styles.slotTexto,
-                          indisponivel && styles.slotTextoOcupado,
-                          selecionado && styles.slotTextoSelecionado,
+                          {
+                            color: selecionado
+                              ? tema.textOnAccent
+                              : ocupado
+                                ? tema.danger
+                                : tema.textPrimary,
+                            fontSize: tema.fontSize(15),
+                          },
                         ]}
                       >
                         {horario}
@@ -630,11 +763,17 @@ export default function AgendarServicoScreen() {
                       <Text
                         style={[
                           styles.slotStatus,
-                          indisponivel && styles.slotTextoOcupado,
-                          selecionado && styles.slotTextoSelecionado,
+                          {
+                            color: selecionado
+                              ? tema.textOnAccent
+                              : ocupado
+                                ? tema.danger
+                                : tema.success,
+                            fontSize: tema.fontSize(11),
+                          },
                         ]}
                       >
-                        {labelStatus}
+                        {statusTexto}
                       </Text>
                     </TouchableOpacity>
                   );
@@ -649,7 +788,7 @@ export default function AgendarServicoScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bgPrimary },
+  container: { flex: 1 },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -657,138 +796,61 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 14,
-    backgroundColor: COLORS.bgSurface,
     borderBottomWidth: 1,
-    borderBottomColor: '#6B6E6B',
   },
-  topTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.textPrimary },
+  topTitle: { fontWeight: 'bold' },
   backButton: { padding: 4 },
-  content: { padding: 20, paddingBottom: 36 },
+  content: { padding: 20 },
   resumoCard: {
-    backgroundColor: COLORS.bgSurface,
     padding: 18,
     borderRadius: 14,
-    marginBottom: 20,
     borderWidth: 1,
-    borderColor: COLORS.borderSubtle,
   },
-  resumoLabel: { color: COLORS.textSecondary, fontSize: 12 },
-  resumoServico: {
-    color: COLORS.textPrimary,
-    fontSize: 15,
-    fontWeight: 'bold',
-    marginTop: 4,
-  },
-  resumoPreco: {
-    color: COLORS.accent,
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginTop: 8,
-  },
-  secaoTitulo: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    color: COLORS.accent,
-    marginBottom: 12,
-    marginTop: 6,
-  },
-  textoVazio: { color: COLORS.textSecondary, fontSize: 13, fontStyle: 'italic' },
-  gridProfissionais: { gap: 10, marginBottom: 16 },
+  resumoLabel: {},
+  resumoServico: { fontWeight: 'bold', marginTop: 4 },
+  regraPacoteBadge: { fontWeight: '600', marginTop: 6 },
+  resumoPreco: { fontWeight: 'bold', marginTop: 8 },
+  secaoTitulo: { fontWeight: 'bold', marginBottom: 12, marginTop: 6 },
+  textoVazio: { fontStyle: 'italic' },
+  gridProfissionais: {},
   cardProfissional: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.bgSurface,
     padding: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
     gap: 12,
   },
-  cardProfissionalSelecionado: {
-    borderColor: COLORS.accent,
-    backgroundColor: COLORS.accentSoft,
-  },
-  nomeProfissional: { color: COLORS.textPrimary, fontSize: 15 },
-  nomeProfissionalSelecionado: { color: COLORS.accent, fontWeight: 'bold' },
-
-  calendarioCard: {
-    backgroundColor: COLORS.bgSurface,
-    borderRadius: 14,
-    padding: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: COLORS.borderSubtle,
-  },
-  calendarioHeader: {
+  nomeProfissional: {},
+  gridDias: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  calendarioMesTitulo: {
-    color: COLORS.textPrimary,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  botaoMes: { backgroundColor: '#4A4E4A', padding: 6, borderRadius: 8 },
-  botaoMesDesabilitado: { opacity: 0.3 },
-  calendarioLinha: { flexDirection: 'row', flexWrap: 'wrap' },
-  celulaCalendario: { width: `${100 / 7}%`, padding: 2, alignItems: 'center' },
-  cabecalhoSemana: {
-    color: COLORS.textSecondary,
-    fontSize: 11,
-    fontWeight: '600',
-    paddingBottom: 4,
+    flexWrap: 'wrap',
   },
   cardDia: {
-    width: '100%',
-    aspectRatio: 1,
-    backgroundColor: COLORS.bgPrimary,
+    width: '18.5%',
+    paddingVertical: 10,
     borderRadius: 10,
     alignItems: 'center',
-    justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
   },
-  cardDiaHoje: { borderColor: COLORS.accent },
-  cardDiaPassado: { backgroundColor: COLORS.bgDark, opacity: 0.45 },
-  cardDiaSelecionado: {
-    backgroundColor: COLORS.accent,
-    borderColor: COLORS.accent,
-  },
-  diaNumeroTexto: { color: COLORS.textPrimary, fontSize: 14, fontWeight: 'bold' },
-  diaNumeroPassado: { color: COLORS.textMuted },
-  textoEscuro: { color: COLORS.textOnAccent },
-
+  diaSemanaTexto: { fontWeight: '600' },
+  diaNumeroTexto: { fontWeight: 'bold', marginTop: 2 },
   resumoSelecaoDataHora: {
-    backgroundColor: COLORS.bgElevated,
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: COLORS.accentBorder,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 22,
   },
-  resumoDataHoraTitulo: {
-    color: COLORS.textPrimary,
-    fontSize: 13,
-    fontWeight: 'bold',
-  },
-  resumoDataHoraSub: { color: COLORS.accent, fontSize: 12, marginTop: 3 },
+  resumoDataHoraTitulo: { fontWeight: 'bold' },
+  resumoDataHoraSub: { marginTop: 3 },
   botaoConfirmar: {
-    backgroundColor: COLORS.accent,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
   },
-  botaoConfirmarDesabilitado: { opacity: 0.5 },
-  textoBotaoConfirmar: {
-    color: COLORS.textOnAccent,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  textoBotaoConfirmar: { fontWeight: 'bold' },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.72)',
@@ -796,11 +858,9 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalCard: {
-    backgroundColor: COLORS.bgElevated,
     borderRadius: 18,
     padding: 20,
     borderWidth: 1,
-    borderColor: COLORS.accentBorder,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -808,10 +868,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 18,
   },
-  modalTitulo: { color: COLORS.textPrimary, fontSize: 18, fontWeight: 'bold' },
-  modalSubtitulo: { color: COLORS.accent, fontSize: 12, marginTop: 3 },
+  modalTitulo: { fontWeight: 'bold' },
+  modalSubtitulo: { marginTop: 3 },
   botaoFecharModal: {
-    backgroundColor: '#4A4E4A',
     padding: 6,
     borderRadius: 8,
   },
@@ -819,34 +878,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: 10,
   },
   slotHorario: {
     width: '48%',
-    backgroundColor: COLORS.bgSurface,
     paddingVertical: 14,
     paddingHorizontal: 10,
     borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: COLORS.borderSubtle,
   },
-  slotOcupado: {
-    backgroundColor: COLORS.bgDark,
-    borderColor: 'rgba(255, 76, 76, 0.25)',
-    opacity: 0.55,
-  },
-  slotSelecionado: {
-    backgroundColor: COLORS.accent,
-    borderColor: COLORS.accent,
-  },
-  slotTexto: { color: COLORS.textPrimary, fontSize: 15, fontWeight: 'bold' },
-  slotStatus: {
-    color: COLORS.success,
-    fontSize: 11,
-    marginTop: 3,
-    fontWeight: '600',
-  },
-  slotTextoOcupado: { color: COLORS.danger },
-  slotTextoSelecionado: { color: COLORS.textOnAccent },
+  slotTexto: { fontWeight: 'bold' },
+  slotStatus: { marginTop: 3, fontWeight: '600' },
 });

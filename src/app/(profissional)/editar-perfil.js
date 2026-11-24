@@ -6,9 +6,11 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth, db } from '../../config/firebase';
+import { useAcessibilidade } from '../../context/AcessibilidadeContext';
 
 export default function EditarPerfilProfissionalScreen() {
   const router = useRouter();
+  const { tema, config } = useAcessibilidade();
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [telefone, setTelefone] = useState('');
@@ -47,11 +49,13 @@ export default function EditarPerfilProfissionalScreen() {
       return;
     }
 
+    const mediaTypeImages = ImagePicker.MediaType?.Images ?? 'images';
+
     const resultado = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: [mediaTypeImages],
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.5,
+      quality: 0.25,
       base64: true,
     });
 
@@ -90,72 +94,222 @@ export default function EditarPerfilProfissionalScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+    <SafeAreaView style={[styles.container, { backgroundColor: tema.bgPrimary }]}>
+      <View
+        style={[
+          styles.topBar,
+          {
+            backgroundColor: tema.bgSurface,
+            borderBottomColor: tema.borderSubtle,
+          },
+        ]}
+      >
+        <TouchableOpacity
+          hitSlop={tema.hitSlopPadrao}
+          accessibilityRole="button"
+          accessibilityLabel="Voltar para a tela anterior"
+          onPress={() => router.back()}
+          style={[
+            styles.backButton,
+            {
+              minWidth: tema.minTouchHeight,
+              minHeight: tema.minTouchHeight,
+              alignItems: 'center',
+              justifyContent: 'center',
+            },
+          ]}
+        >
+          <Ionicons name="arrow-back" size={24} color={tema.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.topTitle}>Editar Perfil</Text>
-        <View style={{ width: 24 }} />
+        <Text
+          accessibilityRole="header"
+          style={[
+            styles.topTitle,
+            { color: tema.textPrimary, fontSize: tema.fontSize(18) },
+          ]}
+        >
+          Editar Perfil
+        </Text>
+        <View style={{ width: Math.max(24, tema.minTouchHeight) }} />
       </View>
 
       {carregando ? (
-        <ActivityIndicator color="#FF98B9" style={{ marginTop: 40 }} />
+        <ActivityIndicator
+          color={tema.accent}
+          accessibilityLabel="Carregando dados do perfil"
+          style={{ marginTop: 40 }}
+        />
       ) : (
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          
-          <View style={styles.avatarSection}>
-            <TouchableOpacity onPress={escolherFoto} style={styles.avatarWrapper}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: 88 + tema.espacoExtra },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={[styles.avatarSection, { marginBottom: 20 + tema.espacoExtra }]}>
+            <TouchableOpacity
+              hitSlop={tema.hitSlopPadrao}
+              accessibilityRole="button"
+              accessibilityLabel="Alterar foto de perfil"
+              onPress={escolherFoto}
+              style={styles.avatarWrapper}
+            >
               {fotoBase64 ? (
-                <Image source={{ uri: fotoBase64 }} style={styles.avatarImage} />
+                <Image
+                  source={{ uri: fotoBase64 }}
+                  style={[styles.avatarImage, { borderColor: tema.accent, borderWidth: 2 }]}
+                />
               ) : (
-                <View style={styles.avatarPlaceholder}>
-                  <Ionicons name="camera" size={28} color="#434643" />
+                <View style={[styles.avatarPlaceholder, { backgroundColor: tema.accent }]}>
+                  <Ionicons name="camera" size={28} color={tema.textOnAccent} accessible={false} />
                 </View>
               )}
-              <View style={styles.cameraIconBadge}>
-                <Ionicons name="pencil" size={14} color="#FFFFFF" />
+              <View
+                style={[
+                  styles.cameraIconBadge,
+                  {
+                    backgroundColor: tema.bgPrimary,
+                    borderColor: tema.bgSurface,
+                  },
+                ]}
+              >
+                <Ionicons name="pencil" size={14} color={tema.textPrimary} accessible={false} />
               </View>
             </TouchableOpacity>
-            <Text style={styles.mudarFotoText}>Alterar foto de perfil</Text>
+            {!config.modoCalmo && (
+              <Text
+                style={[
+                  styles.mudarFotoText,
+                  { color: tema.accent, fontSize: tema.fontSize(13) },
+                ]}
+              >
+                Alterar foto de perfil
+              </Text>
+            )}
           </View>
 
-          <Text style={styles.label}>Nome Completo</Text>
-          <TextInput 
-            style={styles.input} 
+          <Text
+            style={[
+              styles.label,
+              {
+                color: tema.textPrimary,
+                fontSize: tema.fontSize(14),
+                marginTop: 15 + tema.espacoExtra,
+              },
+            ]}
+          >
+            Nome Completo
+          </Text>
+          <TextInput
+            accessibilityLabel="Nome Completo"
+            style={[
+              styles.input,
+              {
+                backgroundColor: tema.bgSurface,
+                borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                color: tema.textPrimary,
+                fontSize: tema.fontSize(16),
+                minHeight: tema.minTouchHeight,
+              },
+            ]}
             value={nome}
             onChangeText={setNome}
-            placeholderTextColor="#A0A3A0"
+            placeholderTextColor={tema.textMuted}
           />
 
-          <Text style={styles.label}>E-mail (Leitura)</Text>
-          <TextInput 
-            style={[styles.input, { opacity: 0.6 }]} 
+          <Text
+            style={[
+              styles.label,
+              {
+                color: tema.textPrimary,
+                fontSize: tema.fontSize(14),
+                marginTop: 15 + tema.espacoExtra,
+              },
+            ]}
+          >
+            E-mail (Leitura)
+          </Text>
+          <TextInput
+            accessibilityLabel="E-mail, somente leitura"
+            accessibilityState={{ disabled: true }}
+            style={[
+              styles.input,
+              {
+                backgroundColor: tema.bgSurface,
+                borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                color: tema.textPrimary,
+                fontSize: tema.fontSize(16),
+                minHeight: tema.minTouchHeight,
+                opacity: 0.6,
+              },
+            ]}
             value={email}
             editable={false}
             keyboardType="email-address"
-            placeholderTextColor="#A0A3A0"
+            placeholderTextColor={tema.textMuted}
           />
 
-          <Text style={styles.label}>Telefone</Text>
-          <TextInput 
-            style={styles.input} 
+          <Text
+            style={[
+              styles.label,
+              {
+                color: tema.textPrimary,
+                fontSize: tema.fontSize(14),
+                marginTop: 15 + tema.espacoExtra,
+              },
+            ]}
+          >
+            Telefone
+          </Text>
+          <TextInput
+            accessibilityLabel="Telefone"
+            style={[
+              styles.input,
+              {
+                backgroundColor: tema.bgSurface,
+                borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                color: tema.textPrimary,
+                fontSize: tema.fontSize(16),
+                minHeight: tema.minTouchHeight,
+              },
+            ]}
             value={telefone}
             onChangeText={setTelefone}
             keyboardType="phone-pad"
             placeholder="(11) 99999-9999"
-            placeholderTextColor="#A0A3A0"
+            placeholderTextColor={tema.textMuted}
           />
 
-          <TouchableOpacity 
-            style={[styles.saveButton, salvando && { opacity: 0.6 }]} 
+          <TouchableOpacity
+            hitSlop={tema.hitSlopPadrao}
+            accessibilityRole="button"
+            accessibilityLabel={salvando ? 'Salvando alterações' : 'Guardar Alterações'}
+            accessibilityState={{ disabled: salvando, busy: salvando }}
+            style={[
+              styles.saveButton,
+              {
+                backgroundColor: tema.accent,
+                minHeight: tema.minTouchHeight,
+                justifyContent: 'center',
+                marginTop: 35 + tema.espacoExtra,
+              },
+              salvando && { opacity: 0.6 },
+            ]}
             onPress={handleSalvar}
             disabled={salvando}
           >
             {salvando ? (
-              <ActivityIndicator color="#434643" />
+              <ActivityIndicator color={tema.textOnAccent} />
             ) : (
-              <Text style={styles.saveButtonText}>Guardar Alterações</Text>
+              <Text
+                style={[
+                  styles.saveButtonText,
+                  { color: tema.textOnAccent, fontSize: tema.fontSize(16) },
+                ]}
+              >
+                Guardar Alterações
+              </Text>
             )}
           </TouchableOpacity>
         </ScrollView>
@@ -165,19 +319,37 @@ export default function EditarPerfilProfissionalScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#434643' },
-  topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 15, backgroundColor: '#595959', borderBottomWidth: 1, borderBottomColor: '#6B6E6B' },
-  topTitle: { fontSize: 18, fontWeight: 'bold', color: '#FFFFFF' },
+  container: { flex: 1 },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+  },
+  topTitle: { fontWeight: 'bold' },
   backButton: { padding: 4 },
   scrollContent: { padding: 20 },
-  avatarSection: { alignItems: 'center', marginBottom: 20 },
+  avatarSection: { alignItems: 'center' },
   avatarWrapper: { position: 'relative', width: 90, height: 90, borderRadius: 45 },
   avatarImage: { width: 90, height: 90, borderRadius: 45 },
-  avatarPlaceholder: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#FF98B9', justifyContent: 'center', alignItems: 'center' },
-  cameraIconBadge: { position: 'absolute', bottom: 0, right: 0, backgroundColor: '#1E201E', width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#595959' },
-  mudarFotoText: { color: '#FF98B9', fontSize: 13, fontWeight: 'bold', marginTop: 8 },
-  label: { fontSize: 14, fontWeight: 'bold', color: '#FFFFFF', marginBottom: 8, marginTop: 15 },
-  input: { backgroundColor: '#595959', borderWidth: 1, borderColor: '#6B6E6B', borderRadius: 12, padding: 15, fontSize: 16, color: '#FFFFFF' },
-  saveButton: { backgroundColor: '#FF98B9', borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 35 },
-  saveButtonText: { color: '#434643', fontSize: 16, fontWeight: 'bold' },
+  avatarPlaceholder: { width: 90, height: 90, borderRadius: 45, justifyContent: 'center', alignItems: 'center' },
+  cameraIconBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+  },
+  mudarFotoText: { fontWeight: 'bold', marginTop: 8 },
+  label: { fontWeight: 'bold', marginBottom: 8 },
+  input: { borderWidth: 1, borderRadius: 12, padding: 15 },
+  saveButton: { borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
+  saveButtonText: { fontWeight: 'bold' },
 });

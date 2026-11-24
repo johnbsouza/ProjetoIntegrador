@@ -18,23 +18,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth, db } from '../../config/firebase';
+import { useAcessibilidade } from '../../context/AcessibilidadeContext';
 
-const COLORS = {
-  bgPrimary: '#434643',
-  bgSurface: '#595959',
-  bgElevated: '#383B38',
-  bgDark: '#2B2D2B',
-  borderSubtle: 'rgba(255,255,255,0.12)',
-  accent: '#FF98B9',
-  accentSoft: 'rgba(255, 152, 185, 0.14)',
-  accentBorder: 'rgba(255, 152, 185, 0.45)',
-  textPrimary: '#FFFFFF',
-  textSecondary: '#D1D1D1',
-  textMuted: '#A0A3A0',
-  textOnAccent: '#1E201E',
-};
-
-const MAX_BASE64_CHARS = 750000; // Margem segura abaixo do limite de 1 MB do documento Firestore
+const MAX_BASE64_CHARS = 750000;
 
 function formatarTelefoneInput(valor) {
   const digitos = valor.replace(/\D/g, '').slice(0, 11);
@@ -59,6 +45,7 @@ function montarDataUriBase64(base64Str) {
 export default function EditarPerfilScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const { tema, config } = useAcessibilidade();
   const usuarioAtual = auth.currentUser;
 
   const [nome, setNome] = useState(typeof params.nome === 'string' ? params.nome : '');
@@ -217,22 +204,52 @@ export default function EditarPerfilScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.topBar}>
+    <SafeAreaView style={[styles.container, { backgroundColor: tema.bgPrimary }]}>
+      <View
+        style={[
+          styles.topBar,
+          {
+            backgroundColor: tema.bgSurface,
+            borderBottomColor: tema.borderSubtle,
+          },
+        ]}
+      >
         <TouchableOpacity
+          hitSlop={tema.hitSlopPadrao}
+          accessibilityRole="button"
+          accessibilityLabel="Voltar para a tela anterior"
           onPress={() => router.back()}
-          style={styles.backButton}
-          accessibilityLabel="Voltar"
+          style={[
+            styles.backButton,
+            {
+              minWidth: tema.minTouchHeight,
+              minHeight: tema.minTouchHeight,
+              alignItems: 'center',
+              justifyContent: 'center',
+            },
+          ]}
         >
-          <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
+          <Ionicons name="arrow-back" size={24} color={tema.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.topTitle}>Editar Perfil</Text>
-        <View style={{ width: 24 }} />
+        <Text
+          accessibilityRole="header"
+          style={[
+            styles.topTitle,
+            { color: tema.textPrimary, fontSize: tema.fontSize(18) },
+          ]}
+        >
+          Editar Perfil
+        </Text>
+        <View style={{ width: Math.max(24, tema.minTouchHeight) }} />
       </View>
 
       {carregandoInicial ? (
         <View style={styles.centro}>
-          <ActivityIndicator size="large" color={COLORS.accent} />
+          <ActivityIndicator
+            size="large"
+            color={tema.accent}
+            accessibilityLabel="Carregando dados do perfil"
+          />
         </View>
       ) : (
         <KeyboardAvoidingView
@@ -240,66 +257,172 @@ export default function EditarPerfilScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <ScrollView
-            contentContainerStyle={styles.content}
+            contentContainerStyle={[
+              styles.content,
+              { paddingBottom: 88 + tema.espacoExtra },
+            ]}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            <View style={styles.avatarSection}>
+            <View style={[styles.avatarSection, { marginBottom: 20 + tema.espacoExtra }]}>
               <TouchableOpacity
+                hitSlop={tema.hitSlopPadrao}
+                accessibilityRole="button"
+                accessibilityLabel="Alterar foto de perfil"
                 style={styles.avatarWrapper}
                 onPress={escolherFotoGaleria}
                 activeOpacity={0.85}
               >
                 {fotoPerfil ? (
-                  <Image source={{ uri: fotoPerfil }} style={styles.avatarImagem} />
+                  <Image
+                    source={{ uri: fotoPerfil }}
+                    style={[styles.avatarImagem, { borderColor: tema.accent }]}
+                  />
                 ) : (
-                  <View style={styles.avatarPlaceholder}>
-                    <Ionicons name="person" size={42} color={COLORS.accent} />
+                  <View
+                    style={[
+                      styles.avatarPlaceholder,
+                      {
+                        backgroundColor: tema.bgSurface,
+                        borderColor: tema.accent,
+                      },
+                    ]}
+                  >
+                    <Ionicons name="person" size={42} color={tema.accent} accessible={false} />
                   </View>
                 )}
-                <View style={styles.cameraBadge}>
-                  <Ionicons name="camera" size={16} color={COLORS.textOnAccent} />
+                <View
+                  style={[
+                    styles.cameraBadge,
+                    {
+                      backgroundColor: tema.accent,
+                      borderColor: tema.bgPrimary,
+                    },
+                  ]}
+                >
+                  <Ionicons name="camera" size={16} color={tema.textOnAccent} accessible={false} />
                 </View>
               </TouchableOpacity>
-              <Text style={styles.avatarDica}>Toque para alterar a foto</Text>
+              {!config.modoCalmo && (
+                <Text
+                  style={[
+                    styles.avatarDica,
+                    { color: tema.textSecondary, fontSize: tema.fontSize(12) },
+                  ]}
+                >
+                  Toque para alterar a foto
+                </Text>
+              )}
             </View>
 
-            <View style={styles.formCard}>
-              <Text style={styles.label}>Nome</Text>
-              <View style={styles.inputBox}>
-                <Ionicons name="person-outline" size={18} color={COLORS.accent} />
+            <View
+              style={[
+                styles.formCard,
+                {
+                  backgroundColor: tema.bgSurface,
+                  borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                  marginBottom: 22 + tema.espacoExtra,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.label,
+                  { color: tema.accent, fontSize: tema.fontSize(13) },
+                ]}
+              >
+                Nome
+              </Text>
+              <View
+                style={[
+                  styles.inputBox,
+                  {
+                    backgroundColor: tema.bgElevated,
+                    borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                    minHeight: tema.minTouchHeight,
+                    marginBottom: 14 + tema.espacoExtra,
+                  },
+                ]}
+              >
+                <Ionicons name="person-outline" size={18} color={tema.accent} accessible={false} />
                 <TextInput
-                  style={styles.input}
+                  accessibilityLabel="Nome completo"
+                  style={[
+                    styles.input,
+                    { color: tema.textPrimary, fontSize: tema.fontSize(15) },
+                  ]}
                   value={nome}
                   onChangeText={setNome}
                   placeholder="Digite seu nome completo"
-                  placeholderTextColor={COLORS.textMuted}
+                  placeholderTextColor={tema.textMuted}
                   autoCapitalize="words"
                 />
               </View>
 
-              <Text style={styles.label}>Telefone</Text>
-              <View style={styles.inputBox}>
-                <Ionicons name="call-outline" size={18} color={COLORS.accent} />
+              <Text
+                style={[
+                  styles.label,
+                  { color: tema.accent, fontSize: tema.fontSize(13) },
+                ]}
+              >
+                Telefone
+              </Text>
+              <View
+                style={[
+                  styles.inputBox,
+                  {
+                    backgroundColor: tema.bgElevated,
+                    borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                    minHeight: tema.minTouchHeight,
+                    marginBottom: 14 + tema.espacoExtra,
+                  },
+                ]}
+              >
+                <Ionicons name="call-outline" size={18} color={tema.accent} accessible={false} />
                 <TextInput
-                  style={styles.input}
+                  accessibilityLabel="Telefone com DDD"
+                  style={[
+                    styles.input,
+                    { color: tema.textPrimary, fontSize: tema.fontSize(15) },
+                  ]}
                   value={telefone}
                   onChangeText={(texto) => setTelefone(formatarTelefoneInput(texto))}
                   placeholder="(11) 99999-9999"
-                  placeholderTextColor={COLORS.textMuted}
+                  placeholderTextColor={tema.textMuted}
                   keyboardType="phone-pad"
                 />
               </View>
 
-              <Text style={styles.label}>E-mail</Text>
-              <View style={styles.inputBox}>
-                <Ionicons name="mail-outline" size={18} color={COLORS.accent} />
+              <Text
+                style={[
+                  styles.label,
+                  { color: tema.accent, fontSize: tema.fontSize(13) },
+                ]}
+              >
+                E-mail
+              </Text>
+              <View
+                style={[
+                  styles.inputBox,
+                  {
+                    backgroundColor: tema.bgElevated,
+                    borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                    minHeight: tema.minTouchHeight,
+                    marginBottom: 14 + tema.espacoExtra,
+                  },
+                ]}
+              >
+                <Ionicons name="mail-outline" size={18} color={tema.accent} accessible={false} />
                 <TextInput
-                  style={styles.input}
+                  accessibilityLabel="E-mail"
+                  style={[
+                    styles.input,
+                    { color: tema.textPrimary, fontSize: tema.fontSize(15) },
+                  ]}
                   value={email}
                   onChangeText={setEmail}
                   placeholder="seu@email.com"
-                  placeholderTextColor={COLORS.textMuted}
+                  placeholderTextColor={tema.textMuted}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -308,14 +431,33 @@ export default function EditarPerfilScreen() {
             </View>
 
             <TouchableOpacity
-              style={[styles.botaoSalvar, salvando && styles.botaoDesabilitado]}
+              hitSlop={tema.hitSlopPadrao}
+              accessibilityRole="button"
+              accessibilityLabel={salvando ? 'Salvando alterações' : 'Salvar Alterações'}
+              accessibilityState={{ disabled: salvando, busy: salvando }}
+              style={[
+                styles.botaoSalvar,
+                {
+                  backgroundColor: tema.accent,
+                  minHeight: tema.minTouchHeight,
+                  justifyContent: 'center',
+                },
+                salvando && styles.botaoDesabilitado,
+              ]}
               onPress={handleSalvarAlteracoes}
               disabled={salvando}
             >
               {salvando ? (
-                <ActivityIndicator color={COLORS.textOnAccent} />
+                <ActivityIndicator color={tema.textOnAccent} />
               ) : (
-                <Text style={styles.textoBotaoSalvar}>Salvar Alterações</Text>
+                <Text
+                  style={[
+                    styles.textoBotaoSalvar,
+                    { color: tema.textOnAccent, fontSize: tema.fontSize(16) },
+                  ]}
+                >
+                  Salvar Alterações
+                </Text>
               )}
             </TouchableOpacity>
           </ScrollView>
@@ -328,7 +470,6 @@ export default function EditarPerfilScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bgPrimary,
   },
   topBar: {
     flexDirection: 'row',
@@ -337,14 +478,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 14,
-    backgroundColor: COLORS.bgSurface,
     borderBottomWidth: 1,
-    borderBottomColor: '#6B6E6B',
   },
   topTitle: {
-    fontSize: 18,
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
   },
   backButton: {
     padding: 4,
@@ -356,11 +493,9 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
-    paddingBottom: 36,
   },
   avatarSection: {
     alignItems: 'center',
-    marginBottom: 20,
   },
   avatarWrapper: {
     position: 'relative',
@@ -370,15 +505,12 @@ const styles = StyleSheet.create({
     height: 96,
     borderRadius: 48,
     borderWidth: 2,
-    borderColor: COLORS.accent,
   },
   avatarPlaceholder: {
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: COLORS.bgSurface,
     borderWidth: 2,
-    borderColor: COLORS.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -389,28 +521,19 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: COLORS.accent,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: COLORS.bgPrimary,
   },
   avatarDica: {
-    color: COLORS.textSecondary,
-    fontSize: 12,
     marginTop: 8,
   },
   formCard: {
-    backgroundColor: COLORS.bgSurface,
     borderRadius: 14,
     padding: 18,
     borderWidth: 1,
-    borderColor: COLORS.borderSubtle,
-    marginBottom: 22,
   },
   label: {
-    color: COLORS.accent,
-    fontSize: 13,
     fontWeight: 'bold',
     marginBottom: 8,
     marginTop: 6,
@@ -419,21 +542,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: COLORS.bgElevated,
     borderRadius: 10,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: COLORS.borderSubtle,
-    marginBottom: 14,
   },
   input: {
     flex: 1,
-    color: COLORS.textPrimary,
-    fontSize: 15,
     paddingVertical: 12,
   },
   botaoSalvar: {
-    backgroundColor: COLORS.accent,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -442,8 +559,6 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   textoBotaoSalvar: {
-    color: COLORS.textOnAccent,
-    fontSize: 16,
     fontWeight: 'bold',
   },
 });

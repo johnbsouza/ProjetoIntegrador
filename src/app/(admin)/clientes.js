@@ -11,8 +11,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { db } from '../../config/firebase';
+import { useAcessibilidade } from '../../context/AcessibilidadeContext';
 
 export default function AdminClientesScreen() {
+  const { tema, config } = useAcessibilidade();
   const [clientes, setClientes] = useState([]);
   const [carregando, setCarregando] = useState(true);
 
@@ -38,41 +40,138 @@ export default function AdminClientesScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitulo}>Contatos de Clientes</Text>
-        <Text style={styles.headerSub}>Lista de clientes registados na plataforma</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: tema.bgPrimary }]}>
+      <View
+        style={[
+          styles.header,
+          {
+            backgroundColor: tema.bgSurface,
+            borderBottomColor: tema.borderSubtle,
+          },
+        ]}
+      >
+        <Text
+          accessibilityRole="header"
+          style={[
+            styles.headerTitulo,
+            { color: tema.textPrimary, fontSize: tema.fontSize(20) },
+          ]}
+        >
+          Contatos de Clientes
+        </Text>
+        {!config.modoCalmo && (
+          <Text
+            style={[
+              styles.headerSub,
+              { color: tema.accent, fontSize: tema.fontSize(13) },
+            ]}
+          >
+            Lista de clientes registados na plataforma
+          </Text>
+        )}
       </View>
 
       {carregando ? (
-        <ActivityIndicator color="#FF98B9" style={{ marginTop: 40 }} />
+        <ActivityIndicator
+          color={tema.accent}
+          accessibilityLabel="Carregando lista de clientes"
+          style={{ marginTop: 40 }}
+        />
       ) : (
         <FlatList
           data={clientes}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ padding: 20 }}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            padding: 20,
+            paddingBottom: 88 + tema.espacoExtra,
+            gap: 12 + tema.espacoExtra,
+          }}
           ListEmptyComponent={
-            <Text style={styles.textoVazio}>Nenhum cliente encontrado.</Text>
+            <Text
+              style={[
+                styles.textoVazio,
+                { color: tema.textSecondary, fontSize: tema.fontSize(14) },
+              ]}
+            >
+              Nenhum cliente encontrado.
+            </Text>
           }
           renderItem={({ item }) => {
             const inicial = item.nome ? item.nome.charAt(0).toUpperCase() : 'C';
+            const nomeExibicao = item.nome || 'Cliente sem nome';
+            const emailExibicao = item.email || 'E-mail não informado';
+            const telefoneExibicao = item.telefone || 'Sem telefone';
 
             return (
-              <View style={styles.cardCliente}>
-                <View style={styles.avatarContainer}>
+              <View
+                accessible
+                accessibilityLabel={`Cliente ${nomeExibicao}, e-mail ${emailExibicao}, telefone ${telefoneExibicao}`}
+                style={[
+                  styles.cardCliente,
+                  {
+                    backgroundColor: tema.bgSurface,
+                    borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                  },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.avatarContainer,
+                    { backgroundColor: tema.accent },
+                  ]}
+                >
                   {item.fotoPerfil ? (
-                    <Image source={{ uri: item.fotoPerfil }} style={styles.avatarImage} />
+                    <Image
+                      source={{ uri: item.fotoPerfil }}
+                      accessibilityLabel={`Foto de perfil de ${nomeExibicao}`}
+                      style={styles.avatarImage}
+                    />
                   ) : (
-                    <Text style={styles.avatarText}>{inicial}</Text>
+                    <Text
+                      style={[
+                        styles.avatarText,
+                        { color: tema.textOnAccent, fontSize: tema.fontSize(20) },
+                      ]}
+                    >
+                      {inicial}
+                    </Text>
                   )}
                 </View>
 
                 <View style={styles.infoBox}>
-                  <Text style={styles.nomeCliente}>{item.nome || 'Cliente sem nome'}</Text>
-                  <Text style={styles.emailCliente}>{item.email || 'E-mail não informado'}</Text>
-                  <Text style={styles.telefoneCliente}>
-                    <Ionicons name="call-outline" size={13} color="#FF98B9" /> {item.telefone || 'Sem telefone'}
+                  <Text
+                    style={[
+                      styles.nomeCliente,
+                      { color: tema.textPrimary, fontSize: tema.fontSize(16) },
+                    ]}
+                  >
+                    {nomeExibicao}
                   </Text>
+                  <Text
+                    style={[
+                      styles.emailCliente,
+                      { color: tema.textSecondary, fontSize: tema.fontSize(13) },
+                    ]}
+                  >
+                    {emailExibicao}
+                  </Text>
+                  <View style={styles.telefoneRow}>
+                    <Ionicons
+                      name="call-outline"
+                      size={13}
+                      color={tema.accent}
+                      accessible={false}
+                    />
+                    <Text
+                      style={[
+                        styles.telefoneCliente,
+                        { color: tema.accent, fontSize: tema.fontSize(12) },
+                      ]}
+                    >
+                      {telefoneExibicao}
+                    </Text>
+                  </View>
                 </View>
               </View>
             );
@@ -84,35 +183,37 @@ export default function AdminClientesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#434643' },
-  header: { padding: 20, backgroundColor: '#595959', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)' },
-  headerTitulo: { color: '#FFF', fontSize: 20, fontWeight: 'bold' },
-  headerSub: { color: '#FF98B9', fontSize: 13, marginTop: 2 },
-  textoVazio: { color: '#D1D1D1', textAlign: 'center', marginTop: 40, fontSize: 14 },
+  container: { flex: 1 },
+  header: { padding: 20, borderBottomWidth: 1 },
+  headerTitulo: { fontWeight: 'bold' },
+  headerSub: { marginTop: 2 },
+  textoVazio: { textAlign: 'center', marginTop: 40 },
   cardCliente: {
-    backgroundColor: '#595959',
     flexDirection: 'row',
     alignItems: 'center',
     padding: 15,
     borderRadius: 14,
-    marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
   },
   avatarContainer: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#FF98B9',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 15,
     overflow: 'hidden',
   },
   avatarImage: { width: 50, height: 50, borderRadius: 25 },
-  avatarText: { color: '#434643', fontSize: 20, fontWeight: 'bold' },
+  avatarText: { fontWeight: 'bold' },
   infoBox: { flex: 1 },
-  nomeCliente: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
-  emailCliente: { color: '#D1D1D1', fontSize: 13, marginTop: 2 },
-  telefoneCliente: { color: '#FF98B9', fontSize: 12, marginTop: 4 },
+  nomeCliente: { fontWeight: 'bold' },
+  emailCliente: { marginTop: 2 },
+  telefoneRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 4,
+  },
+  telefoneCliente: {},
 });

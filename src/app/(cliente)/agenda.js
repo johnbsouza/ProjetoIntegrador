@@ -22,24 +22,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth, db } from '../../config/firebase';
-
-const COLORS = {
-  bgPrimary: '#434643',
-  bgSurface: '#595959',
-  bgElevated: '#383B38',
-  bgDark: '#2B2D2B',
-  borderSubtle: 'rgba(255,255,255,0.08)',
-  accent: '#FF98B9',
-  accentSoft: 'rgba(255, 152, 185, 0.14)',
-  accentBorder: 'rgba(255, 152, 185, 0.35)',
-  textPrimary: '#FFFFFF',
-  textSecondary: '#D1D1D1',
-  textMuted: '#A0A3A0',
-  textOnAccent: '#1E201E',
-  success: '#A5D6A7',
-  danger: '#FF7B7B',
-  dangerSoft: 'rgba(255, 123, 123, 0.14)',
-};
+import { useAcessibilidade } from '../../context/AcessibilidadeContext';
 
 const FILTROS = ['Todos', 'Confirmado', 'Cancelado'];
 
@@ -55,6 +38,7 @@ function getChaveOrdenacao(item) {
 
 export default function HistoricoAgendamentosClienteScreen() {
   const router = useRouter();
+  const { tema, config } = useAcessibilidade();
   const [agendamentos, setAgendamentos] = useState([]);
   const [filtroStatus, setFiltroStatus] = useState('Todos');
   const [carregando, setCarregando] = useState(true);
@@ -72,8 +56,6 @@ export default function HistoricoAgendamentosClienteScreen() {
 
     setCarregando(true);
 
-    // Busca na coleção agendamentos onde clienteId == auth.currentUser.uid
-    // (evita exigir índice composto usando ordenação no cliente)
     const q = query(
       collection(db, 'agendamentos'),
       where('clienteId', '==', usuarioAtual.uid)
@@ -90,7 +72,6 @@ export default function HistoricoAgendamentosClienteScreen() {
           });
         });
 
-        // Ordena do agendamento mais recente / próximo para o mais antigo
         lista.sort((a, b) => getChaveOrdenacao(b).localeCompare(getChaveOrdenacao(a)));
 
         setAgendamentos(lista);
@@ -158,28 +139,51 @@ export default function HistoricoAgendamentosClienteScreen() {
     const statusAtual = item.status || 'Confirmado';
     const estaCancelado = statusAtual === 'Cancelado';
     const estaCancelando = cancelandoId === item.id;
+    const dataTexto = item.dataFormatada || item.dataAgendamento || 'Data não informada';
+    const horarioTexto = item.horario || '--:--';
+    const servicoTexto = item.servicoNome || 'Serviço selecionado';
+    const profTexto = item.profissionalNome || 'A definir';
+    const precoTexto = formatarMoeda(item.preco);
 
     return (
-      <View style={[styles.card, estaCancelado && styles.cardCancelado]}>
+      <View
+        style={[
+          styles.card,
+          {
+            backgroundColor: estaCancelado ? tema.bgElevated : tema.bgSurface,
+            borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+            opacity: estaCancelado && !config.altoContraste ? 0.78 : 1,
+          },
+        ]}
+      >
         <View style={styles.cardTopo}>
           <View style={styles.dataHoraBadge}>
-            <Ionicons name="calendar-outline" size={15} color={COLORS.accent} />
-            <Text style={styles.dataHoraTexto}>
-              {item.dataFormatada || item.dataAgendamento || 'Data não informada'} •{' '}
-              {item.horario || '--:--'}
+            <Ionicons name="calendar-outline" size={15} color={tema.accent} accessible={false} />
+            <Text
+              style={[
+                styles.dataHoraTexto,
+                { color: tema.accent, fontSize: tema.fontSize(13) },
+              ]}
+            >
+              {dataTexto} • {horarioTexto}
             </Text>
           </View>
 
           <View
             style={[
               styles.statusPill,
-              estaCancelado ? styles.statusCanceladoPill : styles.statusConfirmadoPill,
+              estaCancelado
+                ? { backgroundColor: tema.dangerSoft, borderColor: tema.danger }
+                : { backgroundColor: tema.successSoft, borderColor: tema.success },
             ]}
           >
             <Text
               style={[
                 styles.statusTexto,
-                estaCancelado ? styles.statusCanceladoTexto : styles.statusConfirmadoTexto,
+                {
+                  color: estaCancelado ? tema.danger : tema.success,
+                  fontSize: tema.fontSize(11),
+                },
               ]}
             >
               {statusAtual}
@@ -187,30 +191,72 @@ export default function HistoricoAgendamentosClienteScreen() {
           </View>
         </View>
 
-        <Text style={styles.servicoNome}>{item.servicoNome || 'Serviço selecionado'}</Text>
+        <Text
+          style={[
+            styles.servicoNome,
+            { color: tema.textPrimary, fontSize: tema.fontSize(16) },
+          ]}
+        >
+          {servicoTexto}
+        </Text>
 
         <View style={styles.infoLinha}>
-          <Ionicons name="person-outline" size={15} color={COLORS.textSecondary} />
-          <Text style={styles.infoTexto}>
-            Profissional: {item.profissionalNome || 'A definir'}
+          <Ionicons name="person-outline" size={15} color={tema.textSecondary} accessible={false} />
+          <Text
+            style={[
+              styles.infoTexto,
+              { color: tema.textSecondary, fontSize: tema.fontSize(13) },
+            ]}
+          >
+            Profissional: {profTexto}
           </Text>
         </View>
 
-        <View style={styles.cardRodape}>
-          <Text style={styles.precoTexto}>{formatarMoeda(item.preco)}</Text>
+        <View
+          style={[
+            styles.cardRodape,
+            { borderTopColor: tema.borderSubtle },
+          ]}
+        >
+          <Text
+            style={[
+              styles.precoTexto,
+              { color: tema.textPrimary, fontSize: tema.fontSize(16) },
+            ]}
+          >
+            {precoTexto}
+          </Text>
 
           {!estaCancelado && (
             <TouchableOpacity
-              style={styles.botaoCancelar}
+              hitSlop={tema.hitSlopPadrao}
+              accessibilityRole="button"
+              accessibilityLabel={`Cancelar agendamento de ${servicoTexto} em ${dataTexto} às ${horarioTexto}`}
+              accessibilityState={{ disabled: estaCancelando, busy: estaCancelando }}
+              style={[
+                styles.botaoCancelar,
+                {
+                  minHeight: tema.minTouchHeight,
+                  backgroundColor: tema.dangerSoft,
+                  borderColor: tema.danger,
+                },
+              ]}
               onPress={() => solicitarCancelamento(item)}
               disabled={estaCancelando}
             >
               {estaCancelando ? (
-                <ActivityIndicator size="small" color={COLORS.danger} />
+                <ActivityIndicator size="small" color={tema.danger} />
               ) : (
                 <>
-                  <Ionicons name="close-circle-outline" size={16} color={COLORS.danger} />
-                  <Text style={styles.textoBotaoCancelar}>Cancelar</Text>
+                  <Ionicons name="close-circle-outline" size={16} color={tema.danger} accessible={false} />
+                  <Text
+                    style={[
+                      styles.textoBotaoCancelar,
+                      { color: tema.danger, fontSize: tema.fontSize(12) },
+                    ]}
+                  >
+                    Cancelar
+                  </Text>
                 </>
               )}
             </TouchableOpacity>
@@ -221,35 +267,100 @@ export default function HistoricoAgendamentosClienteScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.topBar}>
+    <SafeAreaView style={[styles.container, { backgroundColor: tema.bgPrimary }]}>
+      <View
+        style={[
+          styles.topBar,
+          {
+            backgroundColor: tema.bgSurface,
+            borderBottomColor: tema.borderSubtle,
+          },
+        ]}
+      >
         <TouchableOpacity
+          hitSlop={tema.hitSlopPadrao}
+          accessibilityRole="button"
+          accessibilityLabel="Voltar para a tela anterior"
           onPress={() => router.back()}
-          style={styles.backButton}
-          accessibilityLabel="Voltar"
+          style={[
+            styles.backButton,
+            {
+              minWidth: tema.minTouchHeight,
+              minHeight: tema.minTouchHeight,
+              alignItems: 'center',
+              justifyContent: 'center',
+            },
+          ]}
         >
-          <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
+          <Ionicons name="arrow-back" size={24} color={tema.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.topTitle}>Meus Agendamentos</Text>
-        <TouchableOpacity
-          onPress={() => router.push('/(cliente)/servicos')}
-          style={styles.novoButton}
-          accessibilityLabel="Novo agendamento"
+        <Text
+          accessibilityRole="header"
+          style={[
+            styles.topTitle,
+            { color: tema.textPrimary, fontSize: tema.fontSize(18) },
+          ]}
         >
-          <Ionicons name="add" size={22} color={COLORS.textOnAccent} />
+          Meus Agendamentos
+        </Text>
+        <TouchableOpacity
+          hitSlop={tema.hitSlopPadrao}
+          accessibilityRole="button"
+          accessibilityLabel="Novo agendamento"
+          onPress={() => router.push('/(cliente)/servicos')}
+          style={[
+            styles.novoButton,
+            {
+              minWidth: tema.minTouchHeight,
+              minHeight: tema.minTouchHeight,
+              backgroundColor: tema.accent,
+            },
+          ]}
+        >
+          <Ionicons name="add" size={22} color={tema.textOnAccent} />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.filtrosContainer}>
+      <View
+        style={[
+          styles.filtrosContainer,
+          {
+            backgroundColor: tema.bgElevated,
+            borderBottomColor: tema.borderSubtle,
+            gap: 10 + tema.espacoExtra,
+          },
+        ]}
+      >
         {FILTROS.map((filtro) => {
           const ativo = filtroStatus === filtro;
           return (
             <TouchableOpacity
               key={filtro}
-              style={[styles.filtroChip, ativo && styles.filtroChipAtivo]}
+              hitSlop={tema.hitSlopPadrao}
+              accessibilityRole="button"
+              accessibilityLabel={`Filtrar por ${filtro}`}
+              accessibilityState={{ selected: ativo }}
+              style={[
+                styles.filtroChip,
+                {
+                  minHeight: tema.minTouchHeight,
+                  justifyContent: 'center',
+                  backgroundColor: ativo ? tema.accent : tema.bgSurface,
+                  borderColor: ativo ? tema.accent : tema.borderSubtle,
+                },
+              ]}
               onPress={() => setFiltroStatus(filtro)}
             >
-              <Text style={[styles.filtroTexto, ativo && styles.filtroTextoAtivo]}>
+              <Text
+                style={[
+                  styles.filtroTexto,
+                  {
+                    fontSize: tema.fontSize(13),
+                    color: ativo ? tema.textOnAccent : tema.textSecondary,
+                    fontWeight: ativo ? 'bold' : '600',
+                  },
+                ]}
+              >
                 {filtro}
               </Text>
             </TouchableOpacity>
@@ -259,14 +370,33 @@ export default function HistoricoAgendamentosClienteScreen() {
 
       {carregando ? (
         <View style={styles.centroEstado}>
-          <ActivityIndicator size="large" color={COLORS.accent} />
-          <Text style={styles.estadoTexto}>Carregando seus agendamentos...</Text>
+          <ActivityIndicator size="large" color={tema.accent} />
+          <Text
+            style={[
+              styles.estadoTexto,
+              { color: tema.textSecondary, fontSize: tema.fontSize(14) },
+            ]}
+          >
+            Carregando seus agendamentos...
+          </Text>
         </View>
       ) : !usuarioAtual ? (
         <View style={styles.centroEstado}>
-          <Ionicons name="lock-closed-outline" size={44} color={COLORS.textMuted} />
-          <Text style={styles.estadoTitulo}>Sessão não encontrada</Text>
-          <Text style={styles.estadoTexto}>
+          <Ionicons name="lock-closed-outline" size={44} color={tema.textMuted} accessible={false} />
+          <Text
+            style={[
+              styles.estadoTitulo,
+              { color: tema.textPrimary, fontSize: tema.fontSize(17) },
+            ]}
+          >
+            Sessão não encontrada
+          </Text>
+          <Text
+            style={[
+              styles.estadoTexto,
+              { color: tema.textSecondary, fontSize: tema.fontSize(14) },
+            ]}
+          >
             Faça login novamente para visualizar o histórico dos seus agendamentos.
           </Text>
         </View>
@@ -275,30 +405,65 @@ export default function HistoricoAgendamentosClienteScreen() {
           data={agendamentosFiltrados}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          contentContainerStyle={styles.listaContent}
+          contentContainerStyle={[
+            styles.listaContent,
+            {
+              paddingBottom: 88 + tema.espacoExtra,
+              gap: 14 + tema.espacoExtra,
+            },
+          ]}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
               refreshing={atualizando}
               onRefresh={handleRefresh}
-              tintColor={COLORS.accent}
-              colors={[COLORS.accent]}
+              tintColor={tema.accent}
+              colors={[tema.accent]}
             />
           }
           ListEmptyComponent={
             <View style={styles.centroEstado}>
-              <Ionicons name="calendar-clear-outline" size={48} color={COLORS.textMuted} />
-              <Text style={styles.estadoTitulo}>Nenhum agendamento encontrado</Text>
-              <Text style={styles.estadoTexto}>
+              <Ionicons name="calendar-clear-outline" size={48} color={tema.textMuted} accessible={false} />
+              <Text
+                style={[
+                  styles.estadoTitulo,
+                  { color: tema.textPrimary, fontSize: tema.fontSize(17) },
+                ]}
+              >
+                Nenhum agendamento encontrado
+              </Text>
+              <Text
+                style={[
+                  styles.estadoTexto,
+                  { color: tema.textSecondary, fontSize: tema.fontSize(14) },
+                ]}
+              >
                 {filtroStatus === 'Todos'
                   ? 'Você ainda não realizou agendamentos no Lirium Esmalteria & Spa.'
                   : `Não há agendamentos com status "${filtroStatus}".`}
               </Text>
               <TouchableOpacity
-                style={styles.botaoAgendarAgora}
+                hitSlop={tema.hitSlopPadrao}
+                accessibilityRole="button"
+                accessibilityLabel="Agendar um Serviço"
+                style={[
+                  styles.botaoAgendarAgora,
+                  {
+                    backgroundColor: tema.accent,
+                    minHeight: tema.minTouchHeight,
+                    justifyContent: 'center',
+                  },
+                ]}
                 onPress={() => router.push('/(cliente)/servicos')}
               >
-                <Text style={styles.textoBotaoAgendarAgora}>Agendar um Serviço</Text>
+                <Text
+                  style={[
+                    styles.textoBotaoAgendarAgora,
+                    { color: tema.textOnAccent, fontSize: tema.fontSize(14) },
+                  ]}
+                >
+                  Agendar um Serviço
+                </Text>
               </TouchableOpacity>
             </View>
           }
@@ -311,7 +476,6 @@ export default function HistoricoAgendamentosClienteScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bgPrimary,
   },
   topBar: {
     flexDirection: 'row',
@@ -320,20 +484,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 14,
-    backgroundColor: COLORS.bgSurface,
     borderBottomWidth: 1,
-    borderBottomColor: '#6B6E6B',
   },
   topTitle: {
-    fontSize: 18,
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
   },
   backButton: {
     padding: 4,
   },
   novoButton: {
-    backgroundColor: COLORS.accent,
     width: 32,
     height: 32,
     borderRadius: 16,
@@ -344,48 +503,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 20,
     paddingVertical: 12,
-    gap: 10,
-    backgroundColor: COLORS.bgElevated,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderSubtle,
   },
   filtroChip: {
     paddingVertical: 6,
     paddingHorizontal: 14,
     borderRadius: 20,
-    backgroundColor: COLORS.bgSurface,
     borderWidth: 1,
-    borderColor: COLORS.borderSubtle,
   },
-  filtroChipAtivo: {
-    backgroundColor: COLORS.accent,
-    borderColor: COLORS.accent,
-  },
-  filtroTexto: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  filtroTextoAtivo: {
-    color: COLORS.textOnAccent,
-    fontWeight: 'bold',
-  },
+  filtroTexto: {},
   listaContent: {
     padding: 20,
-    paddingBottom: 36,
-    gap: 14,
     flexGrow: 1,
   },
   card: {
-    backgroundColor: COLORS.bgSurface,
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
-    borderColor: COLORS.borderSubtle,
-  },
-  cardCancelado: {
-    opacity: 0.72,
-    backgroundColor: COLORS.bgDark,
   },
   cardTopo: {
     flexDirection: 'row',
@@ -401,8 +535,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   dataHoraTexto: {
-    color: COLORS.accent,
-    fontSize: 13,
     fontWeight: 'bold',
   },
   statusPill: {
@@ -411,27 +543,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
   },
-  statusConfirmadoPill: {
-    backgroundColor: 'rgba(165, 214, 167, 0.14)',
-    borderColor: 'rgba(165, 214, 167, 0.35)',
-  },
-  statusCanceladoPill: {
-    backgroundColor: COLORS.dangerSoft,
-    borderColor: 'rgba(255, 123, 123, 0.35)',
-  },
   statusTexto: {
-    fontSize: 11,
     fontWeight: 'bold',
   },
-  statusConfirmadoTexto: {
-    color: COLORS.success,
-  },
-  statusCanceladoTexto: {
-    color: COLORS.danger,
-  },
   servicoNome: {
-    color: COLORS.textPrimary,
-    fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 8,
   },
@@ -441,21 +556,15 @@ const styles = StyleSheet.create({
     gap: 6,
     marginBottom: 12,
   },
-  infoTexto: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
-  },
+  infoTexto: {},
   cardRodape: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: COLORS.borderSubtle,
   },
   precoTexto: {
-    color: COLORS.textPrimary,
-    fontSize: 16,
     fontWeight: 'bold',
   },
   botaoCancelar: {
@@ -465,13 +574,9 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 8,
-    backgroundColor: COLORS.dangerSoft,
     borderWidth: 1,
-    borderColor: 'rgba(255, 123, 123, 0.35)',
   },
   textoBotaoCancelar: {
-    color: COLORS.danger,
-    fontSize: 12,
     fontWeight: 'bold',
   },
   centroEstado: {
@@ -483,27 +588,20 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   estadoTitulo: {
-    color: COLORS.textPrimary,
-    fontSize: 17,
     fontWeight: 'bold',
     textAlign: 'center',
   },
   estadoTexto: {
-    color: COLORS.textSecondary,
-    fontSize: 14,
     textAlign: 'center',
     lineHeight: 20,
   },
   botaoAgendarAgora: {
     marginTop: 10,
-    backgroundColor: COLORS.accent,
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 10,
   },
   textoBotaoAgendarAgora: {
-    color: COLORS.textOnAccent,
-    fontSize: 14,
     fontWeight: 'bold',
   },
 });

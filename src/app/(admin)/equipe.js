@@ -3,11 +3,23 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { collection, doc, getDocs, updateDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
-import { Alert, FlatList, SafeAreaView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  FlatList,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { db } from '../../config/firebase';
+import { useAcessibilidade } from '../../context/AcessibilidadeContext';
 
 export default function TelaGestaoEquipeComissao() {
   const router = useRouter();
+  const { tema, config } = useAcessibilidade();
   const [profissionais, setProfissionais] = useState([]);
   const [comissaoEditando, setComissaoEditando] = useState({});
 
@@ -23,7 +35,7 @@ export default function TelaGestaoEquipeComissao() {
       });
       setProfissionais(lista);
     } catch (error) {
-      console.error("Erro ao buscar profissionais:", error);
+      console.error('Erro ao buscar profissionais:', error);
     }
   };
 
@@ -49,38 +61,128 @@ export default function TelaGestaoEquipeComissao() {
   }
 
   return (
-    <LinearGradient colors={['#1E201E', '#434643', '#1A1C1A']} style={{ flex: 1 }}>
+    <LinearGradient
+      colors={config.altoContraste ? [tema.bgPrimary, tema.bgPrimary] : ['#1E201E', '#434643', '#1A1C1A']}
+      style={{ flex: 1 }}
+    >
       <SafeAreaView style={estilos.tela}>
         <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-        
+
         <View style={estilos.header}>
-          <TouchableOpacity style={estilos.backButton} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={20} color="#FF98B9" />
+          <TouchableOpacity
+            hitSlop={tema.hitSlopPadrao}
+            accessibilityRole="button"
+            accessibilityLabel="Voltar para a tela anterior"
+            style={[
+              estilos.backButton,
+              {
+                minWidth: tema.minTouchHeight,
+                minHeight: tema.minTouchHeight,
+                backgroundColor: tema.bgSurface,
+                borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+              },
+            ]}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="arrow-back" size={20} color={tema.accent} />
           </TouchableOpacity>
-          <Text style={estilos.tituloTopo}>Equipe & Comissões</Text>
+          <Text
+            accessibilityRole="header"
+            style={[
+              estilos.tituloTopo,
+              { color: tema.accent, fontSize: tema.fontSize(22) },
+            ]}
+          >
+            Equipe & Comissões
+          </Text>
         </View>
 
         <FlatList
           data={profissionais}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={estilos.lista}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[
+            estilos.lista,
+            { paddingBottom: 88 + tema.espacoExtra, gap: 15 + tema.espacoExtra },
+          ]}
+          ListEmptyComponent={
+            <Text
+              style={[
+                estilos.vazioTexto,
+                { color: tema.textSecondary, fontSize: tema.fontSize(14) },
+              ]}
+            >
+              Nenhuma profissional cadastrada.
+            </Text>
+          }
           renderItem={({ item }) => (
-            <View style={estilos.card}>
-              <Text style={estilos.nome}>{item.nome}</Text>
-              <Text style={estilos.email}>{item.email}</Text>
-              
-              <View style={estilos.row}>
-                <TextInput 
-                  style={estilos.inputComissao} 
-                  placeholder="% Comissão" 
-                  placeholderTextColor="rgba(255, 255, 255, 0.4)"
-                  keyboardDataType="numeric"
+            <View
+              style={[
+                estilos.card,
+                {
+                  backgroundColor: tema.bgSurface,
+                  borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  estilos.nome,
+                  { color: tema.textPrimary, fontSize: tema.fontSize(18) },
+                ]}
+              >
+                {item.nome}
+              </Text>
+              <Text
+                style={[
+                  estilos.email,
+                  { color: tema.textSecondary, fontSize: tema.fontSize(13) },
+                ]}
+              >
+                {item.email}
+              </Text>
+
+              <View style={[estilos.row, { gap: 10 + tema.espacoExtra }]}>
+                <TextInput
+                  accessibilityLabel={`Percentual de comissão de ${item.nome}`}
+                  style={[
+                    estilos.inputComissao,
+                    {
+                      backgroundColor: tema.bgElevated,
+                      color: tema.textPrimary,
+                      fontSize: tema.fontSize(15),
+                      borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                      minHeight: tema.minTouchHeight,
+                    },
+                  ]}
+                  placeholder="% Comissão"
+                  placeholderTextColor={tema.textMuted}
                   keyboardType="numeric"
                   defaultValue={String(item.comissaoPorcentagem || 50)}
                   onChangeText={(text) => setComissaoEditando({ ...comissaoEditando, [item.id]: text })}
                 />
-                <TouchableOpacity style={estilos.botaoSalvar} onPress={() => atualizarComissao(item.id)}>
-                  <Text style={estilos.textoBotao}>Salvar</Text>
+                <TouchableOpacity
+                  hitSlop={tema.hitSlopPadrao}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Salvar comissão de ${item.nome}`}
+                  style={[
+                    estilos.botaoSalvar,
+                    {
+                      backgroundColor: tema.accent,
+                      minHeight: tema.minTouchHeight,
+                      justifyContent: 'center',
+                    },
+                  ]}
+                  onPress={() => atualizarComissao(item.id)}
+                >
+                  <Text
+                    style={[
+                      estilos.textoBotao,
+                      { color: tema.textOnAccent, fontSize: tema.fontSize(15) },
+                    ]}
+                  >
+                    Salvar
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -94,14 +196,32 @@ export default function TelaGestaoEquipeComissao() {
 const estilos = StyleSheet.create({
   tela: { flex: 1, paddingHorizontal: 20 },
   header: { flexDirection: 'row', alignItems: 'center', marginVertical: 15 },
-  backButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(89, 89, 89, 0.6)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(107, 110, 107, 0.5)' },
-  tituloTopo: { fontSize: 22, color: '#FF98B9', fontWeight: 'bold', marginLeft: 15, letterSpacing: 0.5 },
-  lista: { paddingBottom: 20 },
-  card: { backgroundColor: 'rgba(67, 70, 67, 0.8)', padding: 18, borderRadius: 18, marginBottom: 15, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' },
-  nome: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
-  email: { color: 'rgba(209, 209, 209, 0.6)', fontSize: 13, marginBottom: 12 },
-  row: { flexDirection: 'row', gap: 10, alignItems: 'center' },
-  inputComissao: { flex: 1, backgroundColor: 'rgba(89, 89, 89, 0.6)', color: '#FFF', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15, borderWidth: 1, borderColor: 'rgba(209, 209, 209, 0.15)' },
-  botaoSalvar: { backgroundColor: '#FF98B9', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 10 },
-  textoBotao: { color: '#434643', fontWeight: 'bold', fontSize: 15 }
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  tituloTopo: { fontWeight: 'bold', marginLeft: 15, letterSpacing: 0.5 },
+  lista: {},
+  vazioTexto: { textAlign: 'center', marginTop: 40 },
+  card: {
+    padding: 18,
+    borderRadius: 18,
+    borderWidth: 1,
+  },
+  nome: { fontWeight: 'bold' },
+  email: { marginBottom: 12 },
+  row: { flexDirection: 'row', alignItems: 'center' },
+  inputComissao: {
+    flex: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+  },
+  botaoSalvar: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 10 },
+  textoBotao: { fontWeight: 'bold' },
 });

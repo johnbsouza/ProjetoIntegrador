@@ -2,12 +2,23 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { collection, doc, getDocs, updateDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
-import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { db } from '../../config/firebase';
+import { useAcessibilidade } from '../../context/AcessibilidadeContext';
 
 export default function ListaProfissionaisScreen() {
   const router = useRouter();
+  const { tema, config } = useAcessibilidade();
   const [equipe, setEquipe] = useState([]);
   const [modalVisivel, setModalVisivel] = useState(false);
   const [profissionalSelecionado, setProfissionalSelecionado] = useState(null);
@@ -27,7 +38,7 @@ export default function ListaProfissionaisScreen() {
       });
       setEquipe(lista);
     } catch (error) {
-      console.error("Erro ao buscar profissionais:", error);
+      console.error('Erro ao buscar profissionais:', error);
     }
   };
 
@@ -74,92 +85,358 @@ export default function ListaProfissionaisScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
+    <SafeAreaView style={[styles.container, { backgroundColor: tema.bgPrimary }]}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: 88 + tema.espacoExtra },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.headerTopo}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={20} color="#FF98B9" />
+          <TouchableOpacity
+            hitSlop={tema.hitSlopPadrao}
+            accessibilityRole="button"
+            accessibilityLabel="Voltar para a tela anterior"
+            style={[
+              styles.backButton,
+              {
+                minWidth: tema.minTouchHeight,
+                minHeight: tema.minTouchHeight,
+                backgroundColor: tema.bgSurface,
+                borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+              },
+            ]}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="arrow-back" size={20} color={tema.accent} />
           </TouchableOpacity>
-          <Text style={styles.tituloTopo}>Gestão de Equipe</Text>
+          <Text
+            accessibilityRole="header"
+            style={[
+              styles.tituloTopo,
+              { color: tema.accent, fontSize: tema.fontSize(20) },
+            ]}
+          >
+            Gestão de Equipe
+          </Text>
         </View>
 
-        <TouchableOpacity 
-          style={styles.addButton}
+        <TouchableOpacity
+          hitSlop={tema.hitSlopPadrao}
+          accessibilityRole="button"
+          accessibilityLabel="Adicionar nova profissional"
+          style={[
+            styles.addButton,
+            {
+              backgroundColor: tema.accent,
+              minHeight: tema.minTouchHeight,
+              marginBottom: 25 + tema.espacoExtra,
+            },
+          ]}
           onPress={() => router.push('/(admin)/novo-profissional')}
         >
-          <Ionicons name="person-add-outline" size={20} color="#434643" />
-          <Text style={styles.addButtonText}>Adicionar Nova Profissional</Text>
+          <Ionicons name="person-add-outline" size={20} color={tema.textOnAccent} accessible={false} />
+          <Text
+            style={[
+              styles.addButtonText,
+              { color: tema.textOnAccent, fontSize: tema.fontSize(15) },
+            ]}
+          >
+            Adicionar Nova Profissional
+          </Text>
         </TouchableOpacity>
 
-        <Text style={styles.sectionTitle}>Colaboradoras Cadastradas</Text>
+        <Text
+          accessibilityRole="header"
+          style={[
+            styles.sectionTitle,
+            { color: tema.textPrimary, fontSize: tema.fontSize(18) },
+          ]}
+        >
+          Colaboradoras Cadastradas
+        </Text>
 
         {equipe.length === 0 ? (
-          <Text style={styles.vazioText}>Nenhuma profissional cadastrada no momento.</Text>
+          <Text
+            style={[
+              styles.vazioText,
+              { color: tema.textSecondary, fontSize: tema.fontSize(14) },
+            ]}
+          >
+            Nenhuma profissional cadastrada no momento.
+          </Text>
         ) : (
-          equipe.map((prof) => (
-            <View key={prof.id} style={styles.card}>
-              <View style={styles.cardTopRow}>
-                <View style={styles.avatarBox}>
-                  <Text style={styles.avatarText}>{prof.nome ? prof.nome[0] : 'P'}</Text>
+          equipe.map((prof) => {
+            const nomeProf = prof.nome || 'Profissional';
+            const comissaoAtual = prof.comissaoPorcentagem || 50;
+            return (
+              <View
+                key={prof.id}
+                style={[
+                  styles.card,
+                  {
+                    backgroundColor: tema.bgSurface,
+                    borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                    marginBottom: 15 + tema.espacoExtra,
+                  },
+                ]}
+              >
+                <View style={styles.cardTopRow}>
+                  <View
+                    style={[
+                      styles.avatarBox,
+                      { backgroundColor: tema.bgElevated },
+                    ]}
+                    accessible={false}
+                  >
+                    <Text
+                      style={[
+                        styles.avatarText,
+                        { color: tema.accent, fontSize: tema.fontSize(18) },
+                      ]}
+                    >
+                      {prof.nome ? prof.nome[0].toUpperCase() : 'P'}
+                    </Text>
+                  </View>
+                  <View style={styles.infoBox}>
+                    <Text
+                      style={[
+                        styles.nomeText,
+                        { color: tema.textPrimary, fontSize: tema.fontSize(16) },
+                      ]}
+                    >
+                      {nomeProf}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.cargoText,
+                        { color: tema.textSecondary, fontSize: tema.fontSize(12) },
+                      ]}
+                    >
+                      {prof.email}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.comissaoLabel,
+                        { color: tema.accent, fontSize: tema.fontSize(12) },
+                      ]}
+                    >
+                      Comissão: {comissaoAtual}%
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    hitSlop={tema.hitSlopPadrao}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Simular comissão de ${nomeProf}`}
+                    onPress={() => abrirSimulador(prof)}
+                    style={[
+                      styles.simularBtn,
+                      {
+                        minWidth: tema.minTouchHeight,
+                        minHeight: tema.minTouchHeight,
+                        backgroundColor: tema.bgElevated,
+                        borderColor: config.altoContraste ? tema.accentBorder : 'transparent',
+                        borderWidth: config.altoContraste ? 1 : 0,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      },
+                    ]}
+                  >
+                    <Ionicons name="calculator-outline" size={20} color={tema.accent} />
+                  </TouchableOpacity>
                 </View>
-                <View style={styles.infoBox}>
-                  <Text style={styles.nomeText}>{prof.nome}</Text>
-                  <Text style={styles.cargoText}>{prof.email}</Text>
-                  <Text style={styles.comissaoLabel}>Comissão: {prof.comissaoPorcentagem || 50}%</Text>
-                </View>
-                <TouchableOpacity onPress={() => abrirSimulador(prof)} style={styles.simularBtn}>
-                  <Ionicons name="calculator-outline" size={20} color="#FF98B9" />
-                </TouchableOpacity>
-              </View>
 
-              <View style={styles.rowComissao}>
-                <TextInput 
-                  style={styles.inputComissao} 
-                  placeholder="Nova %" 
-                  placeholderTextColor="rgba(255, 255, 255, 0.4)"
-                  keyboardType="numeric"
-                  maxLength={3}
-                  onChangeText={setComissaoInput}
-                />
-                <TouchableOpacity style={styles.btnSalvarComissao} onPress={() => atualizarComissao(prof.id)}>
-                  <Text style={styles.txtSalvarComissao}>Alterar %</Text>
-                </TouchableOpacity>
+                <View
+                  style={[
+                    styles.rowComissao,
+                    {
+                      borderTopColor: tema.borderSubtle,
+                      gap: 10 + tema.espacoExtra,
+                    },
+                  ]}
+                >
+                  <TextInput
+                    accessibilityLabel={`Nova porcentagem de comissão para ${nomeProf}`}
+                    style={[
+                      styles.inputComissao,
+                      {
+                        backgroundColor: tema.bgElevated,
+                        color: tema.textPrimary,
+                        fontSize: tema.fontSize(14),
+                        borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                        minHeight: tema.minTouchHeight,
+                      },
+                    ]}
+                    placeholder="Nova %"
+                    placeholderTextColor={tema.textMuted}
+                    keyboardType="numeric"
+                    maxLength={3}
+                    onChangeText={setComissaoInput}
+                  />
+                  <TouchableOpacity
+                    hitSlop={tema.hitSlopPadrao}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Salvar nova comissão de ${nomeProf}`}
+                    style={[
+                      styles.btnSalvarComissao,
+                      {
+                        backgroundColor: tema.accent,
+                        minHeight: tema.minTouchHeight,
+                      },
+                    ]}
+                    onPress={() => atualizarComissao(prof.id)}
+                  >
+                    <Text
+                      style={[
+                        styles.txtSalvarComissao,
+                        { color: tema.textOnAccent, fontSize: tema.fontSize(13) },
+                      ]}
+                    >
+                      Alterar %
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
-          ))
+            );
+          })
         )}
-
       </ScrollView>
 
-      <Modal visible={modalVisivel} animationType="slide" transparent>
+      <Modal
+        visible={modalVisivel}
+        animationType="slide"
+        transparent
+        accessibilityViewIsModal
+        onRequestClose={() => setModalVisivel(false)}
+      >
         <View style={styles.modalFundo}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitulo}>Simular Comissão</Text>
-            <Text style={styles.modalSub}>{profissionalSelecionado?.nome} ({profissionalSelecionado?.comissaoPorcentagem || 50}%)</Text>
-            
-            <TextInput 
-              style={styles.inputModal} 
-              placeholder="Valor do Serviço (R$)" 
-              placeholderTextColor="rgba(255, 255, 255, 0.4)"
+          <View
+            style={[
+              styles.modalCard,
+              {
+                backgroundColor: tema.bgSurface,
+                borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+              },
+            ]}
+          >
+            <Text
+              accessibilityRole="header"
+              style={[
+                styles.modalTitulo,
+                { color: tema.accent, fontSize: tema.fontSize(20) },
+              ]}
+            >
+              Simular Comissão
+            </Text>
+            <Text
+              style={[
+                styles.modalSub,
+                { color: tema.textSecondary, fontSize: tema.fontSize(13) },
+              ]}
+            >
+              {profissionalSelecionado?.nome} ({profissionalSelecionado?.comissaoPorcentagem || 50}%)
+            </Text>
+
+            <TextInput
+              accessibilityLabel="Valor do serviço em reais para simulação"
+              style={[
+                styles.inputModal,
+                {
+                  backgroundColor: tema.bgElevated,
+                  color: tema.textPrimary,
+                  fontSize: tema.fontSize(15),
+                  borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+                  minHeight: tema.minTouchHeight,
+                },
+              ]}
+              placeholder="Valor do Serviço (R$)"
+              placeholderTextColor={tema.textMuted}
               keyboardType="numeric"
               value={valorServico}
               onChangeText={(text) => setValorServico(formatarMoeda(text))}
             />
 
-            <TouchableOpacity style={styles.botaoCalcular} onPress={calcularComissaoSimulacao}>
-              <Text style={styles.textoBotaoCalc}>Calcular Comissão</Text>
+            <TouchableOpacity
+              hitSlop={tema.hitSlopPadrao}
+              accessibilityRole="button"
+              accessibilityLabel="Calcular comissão"
+              style={[
+                styles.botaoCalcular,
+                {
+                  backgroundColor: tema.accent,
+                  minHeight: tema.minTouchHeight,
+                  justifyContent: 'center',
+                },
+              ]}
+              onPress={calcularComissaoSimulacao}
+            >
+              <Text
+                style={[
+                  styles.textoBotaoCalc,
+                  { color: tema.textOnAccent, fontSize: tema.fontSize(15) },
+                ]}
+              >
+                Calcular Comissão
+              </Text>
             </TouchableOpacity>
 
             {comissaoCalculada !== null && (
-              <View style={styles.resultadoBox}>
-                <Text style={styles.resultadoTexto}>Valor para a Profissional:</Text>
-                <Text style={styles.resultadoValor}>R$ {comissaoCalculada.replace('.', ',')}</Text>
+              <View
+                accessible
+                accessibilityLabel={`Valor calculado para a profissional: R$ ${comissaoCalculada.replace('.', ',')}`}
+                style={[
+                  styles.resultadoBox,
+                  {
+                    backgroundColor: tema.bgElevated,
+                    borderColor: config.altoContraste ? tema.accentBorder : 'transparent',
+                    borderWidth: config.altoContraste ? 1 : 0,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.resultadoTexto,
+                    { color: tema.textSecondary, fontSize: tema.fontSize(13) },
+                  ]}
+                >
+                  Valor para a Profissional:
+                </Text>
+                <Text
+                  style={[
+                    styles.resultadoValor,
+                    { color: tema.accent, fontSize: tema.fontSize(22) },
+                  ]}
+                >
+                  R$ {comissaoCalculada.replace('.', ',')}
+                </Text>
               </View>
             )}
 
-            <TouchableOpacity style={styles.botaoFecharModal} onPress={() => setModalVisivel(false)}>
-              <Text style={styles.textoBotaoFechar}>Fechar</Text>
+            <TouchableOpacity
+              hitSlop={tema.hitSlopPadrao}
+              accessibilityRole="button"
+              accessibilityLabel="Fechar simulador de comissão"
+              style={[
+                styles.botaoFecharModal,
+                {
+                  backgroundColor: tema.bgElevated,
+                  borderColor: config.altoContraste ? tema.borderSubtle : 'transparent',
+                  borderWidth: config.altoContraste ? 1 : 0,
+                  minHeight: tema.minTouchHeight,
+                  justifyContent: 'center',
+                },
+              ]}
+              onPress={() => setModalVisivel(false)}
+            >
+              <Text
+                style={[
+                  styles.textoBotaoFechar,
+                  { color: tema.textPrimary, fontSize: tema.fontSize(14) },
+                ]}
+              >
+                Fechar
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -169,38 +446,83 @@ export default function ListaProfissionaisScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#434643' },
+  container: { flex: 1 },
   scrollContent: { padding: 20 },
   headerTopo: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  backButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(89, 89, 89, 0.6)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(107, 110, 107, 0.5)' },
-  tituloTopo: { fontSize: 20, color: '#FF98B9', fontWeight: 'bold', marginLeft: 15, letterSpacing: 0.5 },
-  addButton: { backgroundColor: '#FF98B9', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 12, gap: 8, marginBottom: 25 },
-  addButtonText: { color: '#434643', fontSize: 15, fontWeight: 'bold' },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#FFFFFF', marginBottom: 15 },
-  vazioText: { color: 'rgba(255, 255, 255, 0.6)', textAlign: 'center', marginTop: 20 },
-  card: { backgroundColor: 'rgba(89, 89, 89, 0.45)', padding: 15, borderRadius: 16, marginBottom: 15, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' },
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  tituloTopo: { fontWeight: 'bold', marginLeft: 15, letterSpacing: 0.5 },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+  },
+  addButtonText: { fontWeight: 'bold' },
+  sectionTitle: { fontWeight: 'bold', marginBottom: 15 },
+  vazioText: { textAlign: 'center', marginTop: 20 },
+  card: {
+    padding: 15,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
   cardTopRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  avatarBox: { width: 45, height: 45, borderRadius: 22.5, backgroundColor: '#434643', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
-  avatarText: { fontSize: 18, fontWeight: 'bold', color: '#FF98B9' },
-  infoBox: { flex: 1 },
-  nomeText: { fontSize: 16, fontWeight: 'bold', color: '#FFFFFF', marginBottom: 2 },
-  cargoText: { fontSize: 12, color: '#D1D1D1' },
-  comissaoLabel: { fontSize: 12, color: '#FF98B9', fontWeight: '600', marginTop: 4 },
-  simularBtn: { padding: 8, backgroundColor: 'rgba(67, 70, 67, 0.8)', borderRadius: 10 },
-  rowComissao: { flexDirection: 'row', gap: 10, borderTopWidth: 1, borderTopColor: 'rgba(255, 255, 255, 0.08)', paddingTop: 10 },
-  inputComissao: { flex: 1, backgroundColor: 'rgba(67, 70, 67, 0.8)', color: '#FFF', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 14, borderWidth: 1, borderColor: 'rgba(107, 110, 107, 0.5)' },
-  btnSalvarComissao: { backgroundColor: '#FF98B9', paddingHorizontal: 16, justifyContent: 'center', borderRadius: 10 },
-  txtSalvarComissao: { color: '#434643', fontWeight: 'bold', fontSize: 13 },
+  avatarBox: {
+    width: 45,
+    height: 45,
+    borderRadius: 22.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 15,
+  },
+  avatarText: { fontWeight: 'bold' },
+  infoBox: { flex: 1, marginRight: 8 },
+  nomeText: { fontWeight: 'bold', marginBottom: 2 },
+  cargoText: {},
+  comissaoLabel: { fontWeight: '600', marginTop: 4 },
+  simularBtn: { padding: 8, borderRadius: 10 },
+  rowComissao: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    paddingTop: 10,
+  },
+  inputComissao: {
+    flex: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+  },
+  btnSalvarComissao: { paddingHorizontal: 16, justifyContent: 'center', borderRadius: 10 },
+  txtSalvarComissao: { fontWeight: 'bold' },
   modalFundo: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.7)', justifyContent: 'center', padding: 20 },
-  modalCard: { backgroundColor: '#2C2F2C', padding: 22, borderRadius: 22, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.12)' },
-  modalTitulo: { fontSize: 20, color: '#FF98B9', fontWeight: 'bold', textAlign: 'center' },
-  modalSub: { color: 'rgba(209, 209, 209, 0.7)', fontSize: 13, textAlign: 'center', marginBottom: 20 },
-  inputModal: { backgroundColor: 'rgba(89, 89, 89, 0.6)', color: '#FFF', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, fontSize: 15, borderWidth: 1, borderColor: 'rgba(209, 209, 209, 0.15)', marginBottom: 12 },
-  botaoCalcular: { backgroundColor: '#FF98B9', paddingVertical: 14, borderRadius: 12, alignItems: 'center', marginBottom: 15 },
-  textoBotaoCalc: { color: '#434643', fontWeight: 'bold', fontSize: 15 },
-  resultadoBox: { backgroundColor: 'rgba(89, 89, 89, 0.5)', padding: 16, borderRadius: 12, alignItems: 'center', marginBottom: 15 },
-  resultadoTexto: { color: 'rgba(209, 209, 209, 0.8)', fontSize: 13 },
-  resultadoValor: { color: '#FF98B9', fontSize: 22, fontWeight: 'bold', marginTop: 4 },
-  botaoFecharModal: { backgroundColor: 'rgba(89, 89, 89, 0.8)', paddingVertical: 12, borderRadius: 12, alignItems: 'center' },
-  textoBotaoFechar: { color: '#FFF', fontWeight: 'bold' }
+  modalCard: {
+    padding: 22,
+    borderRadius: 22,
+    borderWidth: 1,
+  },
+  modalTitulo: { fontWeight: 'bold', textAlign: 'center' },
+  modalSub: { textAlign: 'center', marginBottom: 20 },
+  inputModal: {
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  botaoCalcular: { paddingVertical: 14, borderRadius: 12, alignItems: 'center', marginBottom: 15 },
+  textoBotaoCalc: { fontWeight: 'bold' },
+  resultadoBox: { padding: 16, borderRadius: 12, alignItems: 'center', marginBottom: 15 },
+  resultadoTexto: {},
+  resultadoValor: { fontWeight: 'bold', marginTop: 4 },
+  botaoFecharModal: { paddingVertical: 12, borderRadius: 12, alignItems: 'center' },
+  textoBotaoFechar: { fontWeight: 'bold' },
 });
