@@ -7,7 +7,8 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  View,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import BotaoAcessibilidade from '../../components/BotaoAcessibilidade';
@@ -46,16 +47,28 @@ function CustomAdminDrawerContent(props) {
   const rotaAtual = state?.routes?.[state.index]?.name;
 
   async function handleLogout() {
-    try {
-      await signOut(auth);
-    } catch (error) {
-      console.error('Erro ao encerrar sessão:', error);
-      Alert.alert('Erro', 'Não foi possível encerrar a sessão.');
-    }
+    Alert.alert(
+      'Sair da Conta',
+      'Tem certeza de que deseja encerrar a sua sessão?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Sair',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await signOut(auth);
+            } catch (error) {
+              Alert.alert('Erro', 'Não foi possível encerrar a sessão.');
+            }
+          },
+        },
+      ]
+    );
   }
 
-  return (
-    <View style={styles.drawerContainer}>
+  return(
+    <View style = { styles.drawerContainer } >
       <View style={styles.drawerHeader}>
         <Text style={styles.brandTitle}>Lirium Esmalteria</Text>
         <Text style={styles.brandSub}>Painel Administrativo</Text>
@@ -131,89 +144,89 @@ function CustomAdminDrawerContent(props) {
       </TouchableOpacity>
     </View>
   );
-}
+  }
 
-export default function AdminLayout() {
-  const { tema } = useAcessibilidade();
+  export default function AdminLayout() {
+    const { tema } = useAcessibilidade();
 
-  return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <Drawer
-        drawerContent={(props) => <CustomAdminDrawerContent {...props} />}
-        screenOptions={{
-          headerShown: false,
-          drawerStyle: {
-            backgroundColor: tema.bgPrimary,
-            width: 280,
-          },
-        }}
-      >
-        {MENU_PRINCIPAL_ADMIN.map((item) => (
-          <Drawer.Screen
-            key={item.name}
-            name={item.name}
-            options={{ title: item.label }}
-          />
-        ))}
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <Drawer
+          drawerContent={(props) => <CustomAdminDrawerContent {...props} />}
+          screenOptions={{
+            headerShown: false,
+            drawerStyle: {
+              backgroundColor: tema.bgPrimary,
+              width: 280,
+            },
+          }}
+        >
+          {MENU_PRINCIPAL_ADMIN.map((item) => (
+            <Drawer.Screen
+              key={item.name}
+              name={item.name}
+              options={{ title: item.label }}
+            />
+          ))}
 
-        {ROTAS_SECUNDARIAS_ADMIN.map((routeName) => (
-          <Drawer.Screen
-            key={routeName}
-            name={routeName}
-            options={{
-              drawerItemStyle: { display: 'none' },
-              href: null,
-            }}
-          />
-        ))}
-      </Drawer>
+          {ROTAS_SECUNDARIAS_ADMIN.map((routeName) => (
+            <Drawer.Screen
+              key={routeName}
+              name={routeName}
+              options={{
+                drawerItemStyle: { display: 'none' },
+                href: null,
+              }}
+            />
+          ))}
+        </Drawer>
 
-      <BotaoAcessibilidade />
-    </GestureHandlerRootView>
-  );
-}
+        <BotaoAcessibilidade />
+      </GestureHandlerRootView>
+    );
+  }
 
-const styles = StyleSheet.create({
-  drawerContainer: {
-    flex: 1,
-  },
-  drawerHeader: {
-    paddingHorizontal: 20,
-    paddingTop: 28,
-    paddingBottom: 18,
-    borderBottomWidth: 1,
-  },
-  brandTitle: {
-    fontWeight: 'bold',
-  },
-  brandSub: {
-    marginTop: 2,
-  },
-  scrollContent: {
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-  },
-  itemBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 11,
-    paddingHorizontal: 14,
-    borderRadius: 24,
-    borderWidth: 1,
-  },
-  itemTexto: {
-    flex: 1,
-  },
-  logoutBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    borderTopWidth: 1,
-  },
-  logoutTexto: {
-    fontWeight: 'bold',
-  },
-});
+  const styles = StyleSheet.create({
+    drawerContainer: {
+      flex: 1,
+    },
+    drawerHeader: {
+      paddingHorizontal: 20,
+      paddingTop: 28,
+      paddingBottom: 18,
+      borderBottomWidth: 1,
+    },
+    brandTitle: {
+      fontWeight: 'bold',
+    },
+    brandSub: {
+      marginTop: 2,
+    },
+    scrollContent: {
+      paddingVertical: 12,
+      paddingHorizontal: 12,
+    },
+    itemBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      paddingVertical: 11,
+      paddingHorizontal: 14,
+      borderRadius: 24,
+      borderWidth: 1,
+    },
+    itemTexto: {
+      flex: 1,
+    },
+    logoutBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      paddingHorizontal: 24,
+      paddingVertical: 16,
+      borderTopWidth: 1,
+    },
+    logoutTexto: {
+      fontWeight: 'bold',
+    },
+  });

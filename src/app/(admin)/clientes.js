@@ -7,7 +7,8 @@ import {
   Image,
   StyleSheet,
   Text,
-  View,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { db } from '../../config/firebase';
@@ -50,6 +51,25 @@ export default function AdminClientesScreen() {
           },
         ]}
       >
+
+        <TouchableOpacity
+            hitSlop={tema.hitSlopPadrao}
+            accessibilityRole="button"
+            accessibilityLabel="Voltar para a tela anterior"
+            style={[
+              styles.backButton,
+              {
+                minWidth: tema.minTouchHeight,
+                minHeight: tema.minTouchHeight,
+                backgroundColor: tema.bgSurface,
+                borderColor: config.altoContraste ? tema.accentBorder : tema.borderSubtle,
+              },
+            ]}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="arrow-back" size={20} color={tema.accent} />
+          </TouchableOpacity>
+
         <Text
           accessibilityRole="header"
           style={[
