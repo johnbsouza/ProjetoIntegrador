@@ -98,6 +98,27 @@ export default function PerfilAdminScreen() {
               },
             ]}
           >
+
+            <TouchableOpacity
+              hitSlop={tema.hitSlopPadrao}
+              accessibilityRole="button"
+              accessibilityLabel="Voltar para a tela anterior"
+              style={[
+                styles.backButton,
+                {
+                  minWidth: tema.minTouchHeight,
+                  minHeight: tema.minTouchHeight,
+                  backgroundColor: tema.bgSurface,
+                  borderColor: config.altoContraste
+                    ? tema.accentBorder
+                    : tema.borderSubtle,
+                },
+              ]}
+              onPress={() => router.back()}
+            >
+              <Ionicons name="arrow-back" size={22} color={tema.accent} />
+            </TouchableOpacity>
+
             <View
               style={[
                 styles.avatarContainer,
@@ -211,7 +232,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   header: {
     alignItems: 'center',
-    paddingTop: 40,
+    paddingTop: 10,
     paddingBottom: 25,
     borderBottomWidth: 1,
   },
@@ -246,4 +267,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   logoutText: { fontWeight: 'bold', marginLeft: 10 },
+  backButton: {
+  width: 36,
+  height: 36,
+  borderRadius: 10,
+  justifyContent: 'center',
+  alignItems: 'center',
+  borderWidth: 1,
+  alignSelf: 'flex-start',
+  marginLeft: 20,
+  marginBottom: 15,
+},
 });

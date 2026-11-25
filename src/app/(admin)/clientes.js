@@ -1,20 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
-} from 'react-native';
+import { ActivityIndicator, FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { db } from '../../config/firebase';
 import { useAcessibilidade } from '../../context/AcessibilidadeContext';
 
 export default function AdminClientesScreen() {
+  const router = useRouter();
   const { tema, config } = useAcessibilidade();
   const [clientes, setClientes] = useState([]);
   const [carregando, setCarregando] = useState(true);
@@ -70,6 +64,7 @@ export default function AdminClientesScreen() {
             <Ionicons name="arrow-back" size={20} color={tema.accent} />
           </TouchableOpacity>
 
+          <View style={styles.headerTextos}>
         <Text
           accessibilityRole="header"
           style={[
@@ -89,6 +84,7 @@ export default function AdminClientesScreen() {
             Lista de clientes registados na plataforma
           </Text>
         )}
+        </View>
       </View>
 
       {carregando ? (
@@ -204,7 +200,14 @@ export default function AdminClientesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { padding: 20, borderBottomWidth: 1 },
+  header: { 
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    gap: 12, 
+  },
+  headerTextos: { flex: 1, justifyContent: 'center'},
   headerTitulo: { fontWeight: 'bold' },
   headerSub: { marginTop: 2 },
   textoVazio: { textAlign: 'center', marginTop: 40 },
@@ -236,4 +239,13 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   telefoneCliente: {},
+  
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+  }
 });

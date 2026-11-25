@@ -353,9 +353,9 @@ export default function CatalogoEquipeAdminScreen() {
           accessibilityRole="button"
           accessibilityLabel="Voltar para a tela anterior"
           style={[
-            styles.iconButton,
+            styles.backButton,
             {
-              backgroundColor: tema.bgElevated,
+              backgroundColor: tema.bgSurface,
               minWidth: tema.minTouchHeight,
               minHeight: tema.minTouchHeight,
               borderWidth: config.altoContraste ? 1 : 0,
@@ -363,7 +363,7 @@ export default function CatalogoEquipeAdminScreen() {
             },
           ]}
         >
-          <Ionicons name="arrow-back" size={22} color={tema.textPrimary} />
+          <Ionicons name="arrow-back" size={22} color={tema.accent} />
         </TouchableOpacity>
 
         <Text
@@ -1372,12 +1372,13 @@ const styles = StyleSheet.create({
   topTitle: {
     fontWeight: 'bold',
   },
-  iconButton: {
+  backButton: {
     width: 36,
     height: 36,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1
   },
   addButton: {
     width: 36,

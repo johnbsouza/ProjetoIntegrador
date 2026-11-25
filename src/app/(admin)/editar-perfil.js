@@ -113,7 +113,7 @@ export default function EditarPerfilAdminScreen() {
         ]}
       >
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() => router.navigate('/(admin)/perfil')}
           hitSlop={tema.hitSlopPadrao}
           accessibilityRole="button"
           accessibilityLabel="Voltar para a tela anterior"
@@ -122,12 +122,14 @@ export default function EditarPerfilAdminScreen() {
             {
               minWidth: tema.minTouchHeight,
               minHeight: tema.minTouchHeight,
-              alignItems: 'center',
-              justifyContent: 'center',
+              backgroundColor: tema.bgSurface,
+              borderColor: config.altoContraste
+              ? tema.accentBorder
+              : tema.borderSubtle,
             },
           ]}
         >
-          <Ionicons name="arrow-back" size={24} color={tema.textPrimary} />
+          <Ionicons name="arrow-back" size={24} color={tema.accent} />
         </TouchableOpacity>
         <Text
           accessibilityRole="header"
@@ -337,12 +339,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 15,
     paddingBottom: 15,
     borderBottomWidth: 1,
   },
   topTitle: { fontWeight: 'bold' },
-  backButton: { padding: 4 },
+  backButton: {
+    padding: 4,
+    width: 36,
+    height: 36,
+    borderWidth: 1,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   scrollContent: { padding: 20 },
   avatarSection: { alignItems: 'center', marginBottom: 20 },
   avatarWrapper: { position: 'relative', width: 90, height: 90, borderRadius: 45 },
